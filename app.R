@@ -128,7 +128,7 @@ ui <- page_navbar(
     hr(),
     helpText(
       "This app uses an anonymized sample of Daynamica data and the open-source ",
-      a("rDaynamica R package", href = "https://github.com/daynamica/rDaynamica", target = "_blank"),
+      a("rDaynamica R package", href = "https://github.com/Daynamica-Repositories/rDaynamica", target = "_blank"),
       ". Everything shown here can be reproduced in R with your own data."
     )
   ),
@@ -295,7 +295,7 @@ ui <- page_navbar(
       p(class = "about-figure",
         "Point ", code("path2dict()"), " at the folder containing your Daynamica CSV export instead of the example data, and set ",
         code("file_prefix"), " to match your file names. The package's ",
-        a("README", href = "https://github.com/daynamica/rDaynamica#readme", target = "_blank"),
+        a("README", href = "https://github.com/Daynamica-Repositories/rDaynamica#readme", target = "_blank"),
         " and example analysis script describe the full workflow, including ready-made HTML reports.")
     )
   )

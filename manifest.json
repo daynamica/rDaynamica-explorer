@@ -2586,19 +2586,19 @@
         "RemoteType": "github",
         "RemoteHost": "api.github.com",
         "RemoteRepo": "rDaynamica",
-        "RemoteUsername": "daynamica",
-        "RemotePkgRef": "daynamica/rDaynamica",
+        "RemoteUsername": "Daynamica-Repositories",
+        "RemotePkgRef": "Daynamica-Repositories/rDaynamica",
         "RemoteRef": "HEAD",
-        "RemoteSha": "6fe18c33b4bab3805091fcfbfb4321ada34754c1",
+        "RemoteSha": "1972966c6092af861d0225f4757c66d6323f5c7a",
         "GithubRepo": "rDaynamica",
-        "GithubUsername": "daynamica",
+        "GithubUsername": "Daynamica-Repositories",
         "GithubRef": "HEAD",
-        "GithubSHA1": "6fe18c33b4bab3805091fcfbfb4321ada34754c1",
+        "GithubSHA1": "1972966c6092af861d0225f4757c66d6323f5c7a",
         "NeedsCompilation": "no",
-        "Packaged": "2026-10-20 16:44:19 UTC; julia",
+        "Packaged": "2026-10-20 22:20:07 UTC; julia",
         "Author": "Andrew Becker [aut, cre],\n  Yaxuan Zhang [aut],\n  Yingling Fan [aut, cph],\n  Ying Song [aut]",
         "Maintainer": "Andrew Becker <becke617@umn.edu>",
-        "Built": "R 4.6.1; ; 2026-10-20 16:44:23 UTC; windows"
+        "Built": "R 4.6.1; ; 2026-10-20 22:20:11 UTC; windows"
       }
     },
     "rappdirs": {
@@ -3786,7 +3786,7 @@
   },
   "files": {
     "app.R": {
-      "checksum": "40d0c8e3aab3b2a13f7ca1e4a274aab8"
+      "checksum": "441c92e3bb4671b9d9e43ad990c1e8b0"
     },
     "data/example_data.rds": {
       "checksum": "7973e6a008a1f6095c7b7a17d7f1a2a0"
@@ -3795,7 +3795,7 @@
       "checksum": "8485967f242e8f78bce02c359bc098db"
     },
     "R/code.R": {
-      "checksum": "a9977b290671e2b51edb200df902058d"
+      "checksum": "fc4b2f3f3445ab7da4dce30402a90399"
     },
     "R/timeline.R": {
       "checksum": "7cdcd1555dc474b4e47d0787d3755b40"

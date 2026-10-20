@@ -6,7 +6,7 @@
 setup_code <- paste(
   '# Install rDaynamica (once)',
   'install.packages("pak")',
-  'pak::pak("daynamica/rDaynamica")',
+  'pak::pak("Daynamica-Repositories/rDaynamica")',
   '',
   'library(rDaynamica)',
   '',

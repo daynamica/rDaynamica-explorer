@@ -1,6 +1,6 @@
 # Daynamica Data Explorer
 
-An interactive web app for seeing what Daynamica data looks like and how it works, using the anonymized example dataset and without writing any R code. It is built with [Shiny](https://shiny.posit.co/) on top of the [rDaynamica](https://github.com/daynamica/rDaynamica) package.
+An interactive web app for seeing what Daynamica data looks like and how it works, using the anonymized example dataset and without writing any R code. It is built with [Shiny](https://shiny.posit.co/) on top of the [rDaynamica](https://github.com/Daynamica-Repositories/rDaynamica) package.
 
 ## What's in the app
 
@@ -23,7 +23,7 @@ Install the package and app dependencies, then run the app from this folder:
 
 ```r
 install.packages("pak")
-pak::pak(c("daynamica/rDaynamica", "shiny", "bslib", "DT"))
+pak::pak(c("Daynamica-Repositories/rDaynamica", "shiny", "bslib", "DT"))
 shiny::runApp()
 ```
 
@@ -51,7 +51,7 @@ source("scripts/prepare_data.R")
 Posit Connect deploys this app directly from GitHub using `manifest.json`. After changing the app or updating rDaynamica on GitHub, regenerate the manifest and commit it:
 
 ```r
-pak::pak(c("daynamica/rDaynamica", "rsconnect"))
+pak::pak(c("Daynamica-Repositories/rDaynamica", "rsconnect"))
 rsconnect::writeManifest(appFiles = c("app.R", "R/chord.R", "R/code.R", "R/timeline.R", "data/example_data.rds", "www/logo.png"))
 ```
 
