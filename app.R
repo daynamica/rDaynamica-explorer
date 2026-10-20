@@ -11,7 +11,6 @@ library(rDaynamica)
 
 example_data <- readRDS("data/example_data.rds")
 
-all_users <- sort(unique(example_data$day_summary$user_id))
 format_minutes <- function(m) sprintf("%d:%02d", m %/% 60, m %% 60)
 # The time-of-day slider works in clock times on an arbitrary date
 day_start <- as.POSIXct("2000-01-01 00:00", tz = "UTC")
@@ -26,18 +25,77 @@ group_choices <- list(
   TRIP = c("Travel mode" = "subtype_decoded", "Trip purpose" = "trip_purpose")
 )
 
-explainer <- function(...) p(class = "text-muted mb-3", ...)
+# Daynamica brand colors, taken from the logo
+daynamica_green <- "#6BAA43"
+daynamica_green_dark <- "#538037"
+daynamica_ink <- "#1A1A1A"
+
+app_theme <- bs_theme(
+  version = 5,
+  primary = daynamica_green_dark,
+  secondary = daynamica_ink,
+  success = daynamica_green,
+  fg = daynamica_ink,
+  bg = "#ffffff",
+  base_font = font_google("Inter"),
+  "link-color" = daynamica_green_dark
+) |>
+  bs_add_rules(sprintf("
+    .navbar { border-bottom: 3px solid %1$s; }
+    .navbar .nav-link.active { color: %2$s !important; font-weight: 600; box-shadow: inset 0 -3px 0 %1$s; }
+    .navbar-brand img { height: 28px; margin-right: .5rem; vertical-align: -6px; }
+    .about-figure { font-size: .925rem; }
+    .research-questions { background: #f2f7ee; border-left: 4px solid %1$s; border-radius: 4px;
+                          padding: .6rem .9rem; margin: .5rem 0 .75rem; }
+    .research-questions .rq-label { display: block; font-weight: 600; color: %2$s; margin-bottom: .2rem; }
+    .research-questions ul { margin: 0; padding-left: 1.1rem; }
+    .bslib-value-box { border-left: 4px solid %1$s; }
+    .bslib-value-box .value-box-value { color: %2$s; }
+    .chord-wrap { position: relative; }
+    .chord-loading { display: none; position: absolute; inset: auto 0 calc(50%% - 110px) 0; flex-direction: column;
+                     align-items: center; gap: .25rem; text-align: center; color: %2$s; pointer-events: none; }
+    .chord-loading span { color: #6c757d; font-size: .875rem; }
+    .chord-wrap:has(#chord_plot.recalculating) .chord-loading {
+      display: flex; opacity: 0; animation: chord-loading-in .2s ease-out .5s forwards; }
+    @keyframes chord-loading-in { to { opacity: 1; } }
+  ", daynamica_green, daynamica_green_dark))
+
+stat_box <- function(title, output_id) {
+  value_box(title, textOutput(output_id), theme = value_box_theme(bg = "#f6f9f3", fg = daynamica_ink))
+}
+
+# "What this shows" text plus example research questions for a figure or table
+about_figure <- function(shows, questions) {
+  div(
+    class = "about-figure",
+    p(shows),
+    div(class = "research-questions",
+        span(class = "rq-label", "Questions you could explore"),
+        tags$ul(lapply(questions, tags$li)))
+  )
+}
+
+intro <- function(...) p(class = "lead fs-6 mb-3", ...)
 
 ui <- page_navbar(
-  title = "rDaynamica Explorer",
-  theme = bs_theme(version = 5, primary = "#2a6f97", base_font = font_google("Inter")),
+  title = tags$span(tags$img(src = "logo.png", alt = ""), "rDaynamica Explorer"),
+  window_title = "rDaynamica Explorer",
+  theme = app_theme,
+  navbar_options = navbar_options(bg = "#ffffff", theme = "light"),
   fillable = FALSE,
+  header = tagList(
+    tags$head(tags$link(rel = "icon", type = "image/png", href = "logo.png")),
+    # The delay keeps the spinner from flickering on quick updates
+    useBusyIndicators(spinners = TRUE, pulse = TRUE),
+    busyIndicatorOptions(spinner_type = "ring2", spinner_color = daynamica_green, spinner_size = "48px",
+                         spinner_delay = "0.5s", pulse_background = daynamica_green)
+  ),
   sidebar = sidebar(
     width = 300,
     h6("Which days count?"),
     sliderInput("min_hours", "Minimum hours of recorded activities and trips per day",
                 min = 4, max = 24, value = 12, step = 1),
-    helpText("Phones don't always record a full day. Days with less recorded data than this are left out of every tab."),
+    helpText("Phones don't always record a full day, for example when the battery runs out. Days with less recorded data than this are left out of every tab."),
     hr(),
     helpText(
       "This app uses an anonymized sample of Daynamica data and the open-source ",
@@ -48,53 +106,86 @@ ui <- page_navbar(
 
   nav_panel(
     "Overview",
-    explainer("Daynamica is a smartphone app that records people's activities and trips over the day, ",
-              "and asks short survey questions about them. This page summarizes the sample dataset."),
+    intro("Daynamica is a smartphone app that detects participants' activities and trips throughout the day. ",
+          "Participants review them in a daily calendar, label what they were doing and how they traveled, and answer ",
+          "short surveys about specific activities and trips and about how they are feeling in the moment. ",
+          "The result is a detailed, multi-day record of how people spend their time and move around."),
     layout_column_wrap(
       width = "200px", fill = FALSE,
-      value_box("Participants", textOutput("n_users"), theme = "primary"),
-      value_box("Days included", textOutput("n_days"), theme = "secondary"),
-      value_box("Activities & trips", textOutput("n_items"), theme = "secondary"),
-      value_box("Survey responses", textOutput("n_surveys"), theme = "secondary")
+      stat_box("Participants", "n_users"),
+      stat_box("Days included", "n_days"),
+      stat_box("Activities & trips", "n_items"),
+      stat_box("Survey responses", "n_surveys")
     ),
     card(
       card_header("How many days meet each data-completeness threshold?"),
-      explainer("Days on which the participant used the app, by day of week, and how many of them have at least 24, 20, 16, 12, or 8 hours of recorded data."),
+      about_figure(
+        "Each row is a day of the week. \"Total # of Days\" counts the days on which participants opened the app; the other columns show how many of those days (and what share) have at least 24, 20, 16, 12, or 8 hours of recorded activities and trips. This table always covers the full dataset, regardless of the sidebar setting.",
+        list("How complete is passively collected smartphone data, and does completeness differ between weekdays and weekends?",
+             "What completeness threshold gives the best balance between sample size and data quality for a given study?",
+             "Are some participants or days systematically less complete, which could bias results?")
+      ),
       DT::DTOutput("valid_days_table")
     ),
     card(
       card_header("A typical day in the data"),
-      explainer("Per-day statistics for the days included, split into weekdays (FALSE) and weekends (TRUE)."),
+      about_figure(
+        "Each statistic is first calculated for every included participant-day, then summarized across days (median, mean, standard deviation, minimum, and maximum), separately for weekdays and weekends.",
+        list("How much time do people spend traveling each day, and how far do they go?",
+             "How many activities and trips make up a typical day, and how much does this vary between people?",
+             "Do daily travel time budgets differ between weekdays and weekends?")
+      ),
       DT::DTOutput("overview_table")
     )
   ),
 
   nav_panel(
     "Daily timelines",
-    explainer("Each row is one day for one participant, showing what they were doing from midnight to midnight. ",
-              "Hover over a segment for details; click legend entries to hide or show categories."),
-    selectInput("timeline_user", "Participant", choices = NULL),
+    intro("Each row is one day for the selected participant, from midnight to midnight. Tall bars are activities, ",
+          "thin bars are trips, and striped gray bars are periods when the phone recorded nothing. Hover over any bar for details; ",
+          "click legend entries to hide or show categories."),
+    card(
+      about_figure(
+        "Looking at individual days is often the first step in analyzing Daynamica data: it shows the structure of people's days and how they vary.",
+        list("How regular are people's schedules from one day to the next, and how do weekdays differ from weekends?",
+             "When do people leave home in the morning and return in the evening?",
+             "Which activities are reached by which travel modes, and how often do people make several stops on one outing?")
+      ),
+      selectInput("timeline_user", "Participant", choices = NULL, width = "320px")
+    ),
     card(full_screen = TRUE, plotly::plotlyOutput("timeline_plot", height = "auto"))
   ),
 
   nav_panel(
     "Activities & trips",
-    explainer("Averages per day across all included days, for all days, weekdays, and weekends."),
+    intro("How do people divide their day between different activities, and how do they get around?"),
     layout_columns(
       col_widths = c(4, 4, 4),
       radioButtons("summary_type", "Show", c("Activities" = "ACTIVITY", "Trips" = "TRIP"), inline = TRUE),
       selectInput("summary_measure", "Measure", measure_choices$ACTIVITY),
       selectInput("summary_group", "Group by", group_choices$ACTIVITY)
     ),
-    card(full_screen = TRUE, plotly::plotlyOutput("summary_plot", height = "450px")),
-    card(card_header("Table"), DT::DTOutput("summary_table"))
+    card(
+      full_screen = TRUE,
+      card_header(textOutput("summary_title", inline = TRUE)),
+      about_figure(
+        textOutput("summary_description", inline = TRUE),
+        list("How do people allocate their time across work, home, errands, and leisure (time-use research)?",
+             "What is the mode share for different trip purposes, for example how many shopping trips are made on foot?",
+             "How do activity and travel patterns differ between weekdays and weekends, or between groups of participants?")
+      ),
+      plotly::plotlyOutput("summary_plot", height = "450px")
+    ),
+    card(
+      card_header("Table"),
+      p(class = "about-figure", "The numbers behind the chart. Each value is an average per day: the total across all included days divided by the number of days, for all days, weekdays only, and weekends only."),
+      DT::DTOutput("summary_table")
+    )
   ),
 
   nav_panel(
     "Daily rhythm",
-    explainer("How people move between activities and trips over the course of a day. Each ribbon shows how many ",
-              "participant-days went from one category to another in the next 15 minutes; ribbons that loop back ",
-              "to the same category are people who kept doing the same thing. Press play to watch the day unfold."),
+    intro("How people move between activities and trips over the course of a day. Press play to watch the day unfold."),
     layout_columns(
       col_widths = c(4, 8),
       card(
@@ -102,28 +193,50 @@ ui <- page_navbar(
                     value = day_start + 480 * 60, step = 15 * 60, timeFormat = "%H:%M", timezone = "+0000",
                     ticks = FALSE, animate = animationOptions(interval = 1500)),
         textOutput("chord_label"),
-        helpText("Detailed categories are grouped (for example, car, bus, and rail are all Motorized Trip) to keep the diagram readable.")
+        about_figure(
+          "Each segment around the circle is a category, sized by the number of participant-days flowing out of and into it at this time. Ribbons show what people were doing 15 minutes later: a ribbon that loops back to its own segment means they kept doing the same thing, and a ribbon to another segment means they switched. Detailed categories are grouped (for example, car, bus, and rail are all Motorized Trip) to keep the diagram readable.",
+          list("When are transitions between activities most common, and when are travel peaks?",
+               "How synchronized are people's daily rhythms, for example when most people are at work or at home?",
+               "At what times of day are people exposed to travel, which matters for questions about physical activity, air pollution, or traffic safety?")
+        )
       ),
-      card(plotOutput("chord_plot", height = "620px"))
+      card(div(
+        class = "chord-wrap",
+        plotOutput("chord_plot", height = "620px"),
+        div(class = "chord-loading",
+            strong("Preparing the daily rhythm diagram…"),
+            span("This takes a few seconds the first time, and after changing which days count."))
+      ))
     )
   ),
 
   nav_panel(
     "Activity chains",
-    explainer("An activity chain summarizes a day as a sequence of letters: H for home, W for work, O for other activities, ",
-              "and T for trips. For example, HWH means the person went from home to work and back home."),
+    intro("An activity chain summarizes a day as a sequence of letters: H for home, W for work, O for other activities, ",
+          "and T for trips. For example, HWH means the person went from home to work and back home."),
     layout_columns(
       col_widths = c(4, 4, 4),
       checkboxInput("chain_trips", "Include trips (T)", FALSE),
-      sliderInput("chain_min_duration", "Ignore activities shorter than (minutes)", min = 0, max = 60, value = 15, step = 5),
+      sliderInput("chain_min_duration", "Ignore activities and trips shorter than (minutes)", min = 0, max = 60, value = 15, step = 5),
       checkboxInput("chain_collapse", "Combine repeated letters (HHW becomes HW)", TRUE)
+    ),
+    about_figure(
+      "Activity chains are a standard way to describe the structure of a day in travel behavior research and in activity-based travel demand models.",
+      list("How complex are people's days: simple home-work-home patterns, or many stops?",
+           "Do people combine errands into a single outing (trip chaining), and how does that relate to how they travel?",
+           "How often does a day include a stop on the way to or from work?")
     ),
     layout_columns(
       col_widths = c(4, 8),
-      card(card_header("Most common chains"), DT::DTOutput("chain_table")),
+      card(
+        card_header("Most common chains"),
+        p(class = "about-figure", "Each row is a distinct chain, with the number and share of included days that followed it exactly."),
+        DT::DTOutput("chain_table")
+      ),
       card(
         full_screen = TRUE,
         card_header("How days branch out from home"),
+        p(class = "about-figure", "Reading left to right, each column is the next step in the day, starting from home (H). Node labels show the chain so far, and the thickness of each branch is the number of days that took that path. X marks the end of the day."),
         sliderInput("sankey_min", "Hide branches with fewer than this share of days", min = 0.01, max = 0.1,
                     value = 0.02, step = 0.01, width = "100%"),
         networkD3::sankeyNetworkOutput("chain_sankey", height = "500px")
@@ -155,8 +268,9 @@ server <- function(input, output, session) {
 
   output$overview_table <- DT::renderDT({
     stats <- overview_statistics(filtered())
-    setnames(stats, "IsWeekend", "Weekend")
-    DT::datatable(stats, rownames = FALSE, options = list(dom = "t", pageLength = 50)) |>
+    stats[, Days := fifelse(IsWeekend, "Weekends", "Weekdays")]
+    stats <- stats[order(Statistics, Days), .(Statistic = Statistics, Days, Median, Mean, SD, Min, Max)]
+    DT::datatable(stats, rownames = FALSE, options = list(dom = "t", pageLength = 50, ordering = FALSE)) |>
       DT::formatRound(c("Median", "Mean", "SD", "Min", "Max"), digits = 1)
   })
 
@@ -171,10 +285,9 @@ server <- function(input, output, session) {
 
   output$timeline_plot <- plotly::renderPlotly({
     req(input$timeline_user)
-    fig <- plot_indi_temp(filtered()$ucalitems_temporal_plot, input$timeline_user)
+    fig <- plot_timeline(filtered()$ucalitems_temporal_plot, input$timeline_user)
     validate(need(!is.null(fig), "No days for this participant at the current threshold."))
-    fig$x$layout$width <- NULL
-    plotly::layout(fig, font = list(size = 13), margin = list(l = 140))
+    fig
   })
 
   # Activities & trips ----------------------------------------------------
@@ -186,7 +299,33 @@ server <- function(input, output, session) {
   summary_args <- reactive({
     req(input$summary_measure %in% measure_choices[[input$summary_type]],
         input$summary_group %in% group_choices[[input$summary_type]])
-    list(type = input$summary_type, measure = input$summary_measure, group = input$summary_group)
+    list(type = input$summary_type, measure = input$summary_measure, group = input$summary_group,
+         measure_label = names(which(measure_choices[[input$summary_type]] == input$summary_measure)),
+         group_label = names(which(group_choices[[input$summary_type]] == input$summary_group)))
+  })
+
+  output$summary_title <- renderText({
+    a <- summary_args()
+    sprintf("%s per day, by %s", a$measure_label, tolower(a$group_label))
+  })
+
+  output$summary_description <- renderText({
+    a <- summary_args()
+    measure_phrase <- switch(
+      paste(a$type, a$measure),
+      "ACTIVITY id" = "number of activities",
+      "ACTIVITY duration_after_split" = "time spent in each activity",
+      "TRIP id" = "number of trips",
+      "TRIP duration_after_split" = "time spent traveling",
+      "TRIP distance_after_split" = "distance traveled"
+    )
+    extra <-if (a$type == "ACTIVITY" && a$measure == "duration_after_split") {
+      " Time spent traveling (Trip) and time with no recorded data (Device Off) are included so the bars add up to the whole recorded day."
+    } else if (a$type == "TRIP" && a$group == "trip_purpose") {
+      " A trip's purpose is the activity at its destination."
+    } else ""
+    sprintf("Each bar is an average day, for all days, weekdays only, and weekends only, split by %s. Bar length is the %s on an average day.%s",
+            tolower(a$group_label), measure_phrase, extra)
   })
 
   output$summary_plot <- plotly::renderPlotly({
@@ -195,15 +334,28 @@ server <- function(input, output, session) {
       ucalitems = filtered()$ucalitems_temporal_plot, tb = "ucalitems_temporal_plot",
       day_summary = filtered()$day_summary, mytype = a$type, by_field = a$group, agg_col = a$measure
     )
+    fig <- suppressWarnings(plotly::plotly_build(fig))
+    for (i in seq_along(fig$x$data)) {
+      category <- fig$x$data[[i]]$name
+      fig$x$data[[i]]$marker$color <- category_color(category)
+      fig$x$data[[i]]$marker$line <- list(color = "white", width = 1)
+      fig$x$data[[i]]$name <- pretty_label(category)
+      fig$x$data[[i]]$hovertemplate <- paste0("<b>", pretty_label(category), "</b><br>%{y}: %{x:.2f}<extra></extra>")
+    }
     fig$x$layout$width <- NULL
     fig$x$layout$height <- NULL
-    plotly::layout(fig, legend = list(title = list(text = names(which(group_choices[[a$type]] == a$group)))))
+    fig$x$layout$legend$title$text <- a$group_label
+    fig$x$layout$xaxis$title$text <- a$measure_label
+    fig$x$layout$font <- list(family = "Inter, sans-serif")
+    plotly::config(fig, displaylogo = FALSE)
   })
 
   output$summary_table <- DT::renderDT({
     a <- summary_args()
     tbl <- activity_trip(ucalitems = filtered()$ucalitems_temporal_plot, day_summary = filtered()$day_summary,
                          mytype = a$type, by_field = a$group)
+    tbl[[1]] <- pretty_label(tbl[[1]])
+    setnames(tbl, c(a$group_label, sub("_", ": ", names(tbl)[-1])))
     DT::datatable(tbl, rownames = FALSE, options = list(dom = "t", pageLength = 50, scrollX = TRUE)) |>
       DT::formatRound(names(tbl)[-1], digits = 2)
   })
@@ -243,7 +395,13 @@ server <- function(input, output, session) {
   output$chain_sankey <- networkD3::renderSankeyNetwork({
     sankey_data <- create_sankey_data(chains(), lower_limit = input$sankey_min)
     validate(need(any(substr(sankey_data$prev, 1, 1) == "H"), "No chains start at home with these settings."))
-    create_plot_from_data(sankey_data, start_from_H = TRUE)
+    p <- create_plot_from_data(sankey_data, start_from_H = TRUE)
+    p$x$options$colourScale <- htmlwidgets::JS(sprintf(
+      'd3.scaleOrdinal().domain(["H","W","O","T","X"]).range(["%s","%s","%s","%s","%s"])',
+      chord_colors[["HOME"]], chord_colors[["WORK"]], chord_colors[["OTHER"]], chord_colors[["MOTORIZED TRIP"]],
+      chord_colors[["MISSING"]]
+    ))
+    p
   })
 }
 

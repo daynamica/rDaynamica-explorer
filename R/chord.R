@@ -15,8 +15,19 @@ chord_categories <- c(
   "OTHER ACTIVITIES" = "OTHER", "RELIGIOUS & SPIRITUAL" = "OTHER"
 )
 
-chord_palette <- c("#80B1D3", "#BC80BD", "#FB8072", "#FCCDE5", "#FDB462", "#B3DE69", "#FFFFB3",
-                   "#8DD3C7", "#BEBADA", "#D9D9D9", "#CCEBC5", "#FFED6F")
+# Fixed colors per group, anchored on the Daynamica brand green for Home
+chord_colors <- c(
+  "HOME" = "#6BAA43", "WORK" = "#3F5A6B", "OTHER" = "#A7B3BB", "SHOP" = "#9B6FB0",
+  "EAT OUT" = "#E3A33B", "MOTORIZED TRIP" = "#D1495B", "NON-MOTORIZED TRIP" = "#4FA3A5",
+  "MISSING" = "#D0D0D0"
+)
+chord_fallback <- c("#80B1D3", "#FDB462", "#FCCDE5", "#BEBADA", "#FFED6F")
+
+# "NON-MOTORIZED TRIP" -> "Non-motorized\ntrip", so labels fit around the circle
+chord_label <- function(x) {
+  x <- paste0(substr(x, 1, 1), tolower(substring(x, 2)))
+  sub(" ", "\n", x)
+}
 
 # Returns flow rates between grouped categories for every 15-minute step
 prepare_chord_flows <- function(csv_dict_sub) {
@@ -28,11 +39,13 @@ prepare_chord_flows <- function(csv_dict_sub) {
   seq_data <- rDaynamica::generate_sequence_data(grouped$ucalitems_temporal_plot, unit_length = 5)
 
   n <- nrow(seq_data$id_key)
+  colors <- unname(chord_colors[seq_data$id_key$subtype_decoded])
+  colors[is.na(colors)] <- chord_fallback[seq_len(sum(is.na(colors)))]
   category_data <- data.frame(
     label = seq_data$id_key$letters_subtype,
     subtype = seq_data$id_key$subtype_decoded,
     order = seq_len(n),
-    color = chord_palette[seq_len(n)],
+    color = colors,
     stringsAsFactors = FALSE
   )
 
@@ -70,11 +83,18 @@ draw_chord_frame <- function(chord, frame) {
     diffHeight = -0.04, link.sort = TRUE, link.largest.ontop = TRUE
   ))
 
+  # Name only sectors wide enough to hold a label; the legend covers the rest
+  total_flow <- 2 * sum(frame_data$flow_rate)
   circlize::circos.track(track.index = 1, bg.border = NA, panel.fun = function(x, y) {
     xlim <- circlize::get.cell.meta.data("xlim")
-    circlize::circos.text(x = mean(xlim), y = 4, labels = circlize::get.cell.meta.data("sector.index"),
-                          facing = "bending", cex = 0.9)
+    if (diff(xlim) / total_flow > 0.07) {
+      circlize::circos.text(x = mean(xlim), y = 4, labels = chord_label(circlize::get.cell.meta.data("sector.index")),
+                            facing = "bending", cex = 0.85)
+    }
     circlize::circos.axis(h = "top", labels.cex = 0.6, labels.niceFacing = FALSE, labels.pos.adjust = FALSE)
   })
   circlize::circos.clear()
+
+  graphics::legend("bottomleft", legend = gsub("\n", " ", chord_label(category_data$subtype)),
+                   fill = category_data$color, border = NA, bty = "n", cex = 0.8, inset = 0.01)
 }

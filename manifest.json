@@ -3786,13 +3786,19 @@
   },
   "files": {
     "app.R": {
-      "checksum": "c3192fe167f70bffaa89588c69df71c5"
+      "checksum": "b4871a472011bb55c3fd29a096c33779"
     },
     "data/example_data.rds": {
       "checksum": "7973e6a008a1f6095c7b7a17d7f1a2a0"
     },
     "R/chord.R": {
-      "checksum": "de5245beab3de9ad86e197d253ccc91c"
+      "checksum": "8485967f242e8f78bce02c359bc098db"
+    },
+    "R/timeline.R": {
+      "checksum": "7cdcd1555dc474b4e47d0787d3755b40"
+    },
+    "www/logo.png": {
+      "checksum": "513e0658ff0be0551d58471c5cbc452d"
     }
   },
   "users": null
