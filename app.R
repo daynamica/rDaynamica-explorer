@@ -1,4 +1,4 @@
-# rDaynamica Explorer
+# Daynamica Data Explorer
 #
 # An interactive tour of the example Daynamica dataset, built on the rDaynamica
 # package. Helper functions in R/ are loaded automatically by Shiny.
@@ -58,7 +58,35 @@ app_theme <- bs_theme(
     .chord-wrap:has(#chord_plot.recalculating) .chord-loading {
       display: flex; opacity: 0; animation: chord-loading-in .2s ease-out .5s forwards; }
     @keyframes chord-loading-in { to { opacity: 1; } }
+    .code-panel { margin-top: .75rem; }
+    .code-panel > summary { cursor: pointer; color: %2$s; font-weight: 600; font-size: .9rem; }
+    .code-block { position: relative; margin-top: .5rem; }
+    .code-block pre { background: #f6f8f5; border: 1px solid #dfe7da; border-radius: 4px; padding: .75rem;
+                      font-size: .8rem; white-space: pre; overflow-x: auto; margin: 0; }
+    .code-block .copy-code { position: absolute; top: .4rem; right: .4rem; background: #fff; }
   ", daynamica_green, daynamica_green_dark))
+
+copy_code_js <- tags$script(HTML("
+  document.addEventListener('click', function (e) {
+    var button = e.target.closest('.copy-code');
+    if (!button) return;
+    var pre = button.parentElement.querySelector('pre');
+    var selectCode = function () {
+      var range = document.createRange();
+      range.selectNodeContents(pre);
+      var selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+      button.textContent = 'Press Ctrl+C to copy';
+      setTimeout(function () { button.textContent = 'Copy'; }, 3000);
+    };
+    if (!navigator.clipboard) { selectCode(); return; }
+    navigator.clipboard.writeText(pre.innerText).then(function () {
+      button.textContent = 'Copied';
+      setTimeout(function () { button.textContent = 'Copy'; }, 1500);
+    }, selectCode);
+  });
+"))
 
 stat_box <- function(title, output_id) {
   value_box(title, textOutput(output_id), theme = value_box_theme(bg = "#f6f9f3", fg = daynamica_ink))
@@ -78,13 +106,14 @@ about_figure <- function(shows, questions) {
 intro <- function(...) p(class = "lead fs-6 mb-3", ...)
 
 ui <- page_navbar(
-  title = tags$span(tags$img(src = "logo.png", alt = ""), "rDaynamica Explorer"),
-  window_title = "rDaynamica Explorer",
+  title = tags$span(tags$img(src = "logo.png", alt = ""), "Daynamica Data Explorer"),
+  window_title = "Daynamica Data Explorer",
   theme = app_theme,
   navbar_options = navbar_options(bg = "#ffffff", theme = "light"),
   fillable = FALSE,
   header = tagList(
     tags$head(tags$link(rel = "icon", type = "image/png", href = "logo.png")),
+    copy_code_js,
     # The delay keeps the spinner from flickering on quick updates
     useBusyIndicators(spinners = TRUE, pulse = TRUE),
     busyIndicatorOptions(spinner_type = "ring2", spinner_color = daynamica_green, spinner_size = "48px",
@@ -125,7 +154,8 @@ ui <- page_navbar(
              "What completeness threshold gives the best balance between sample size and data quality for a given study?",
              "Are some participants or days systematically less complete, which could bias results?")
       ),
-      DT::DTOutput("valid_days_table")
+      DT::DTOutput("valid_days_table", fill = FALSE),
+      show_code("code_valid_days")
     ),
     card(
       card_header("A typical day in the data"),
@@ -135,7 +165,8 @@ ui <- page_navbar(
              "How many activities and trips make up a typical day, and how much does this vary between people?",
              "Do daily travel time budgets differ between weekdays and weekends?")
       ),
-      DT::DTOutput("overview_table")
+      DT::DTOutput("overview_table", fill = FALSE),
+      show_code("code_overview")
     )
   ),
 
@@ -151,7 +182,8 @@ ui <- page_navbar(
              "When do people leave home in the morning and return in the evening?",
              "Which activities are reached by which travel modes, and how often do people make several stops on one outing?")
       ),
-      selectInput("timeline_user", "Participant", choices = NULL, width = "320px")
+      selectInput("timeline_user", "Participant", choices = NULL, width = "320px"),
+      show_code("code_timeline")
     ),
     card(full_screen = TRUE, plotly::plotlyOutput("timeline_plot", height = "auto"))
   ),
@@ -179,7 +211,8 @@ ui <- page_navbar(
     card(
       card_header("Table"),
       p(class = "about-figure", "The numbers behind the chart. Each value is an average per day: the total across all included days divided by the number of days, for all days, weekdays only, and weekends only."),
-      DT::DTOutput("summary_table")
+      DT::DTOutput("summary_table", fill = FALSE),
+      show_code("code_summary")
     )
   ),
 
@@ -198,7 +231,8 @@ ui <- page_navbar(
           list("When are transitions between activities most common, and when are travel peaks?",
                "How synchronized are people's daily rhythms, for example when most people are at work or at home?",
                "At what times of day are people exposed to travel, which matters for questions about physical activity, air pollution, or traffic safety?")
-        )
+        ),
+        show_code("code_chord")
       ),
       card(div(
         class = "chord-wrap",
@@ -231,7 +265,7 @@ ui <- page_navbar(
       card(
         card_header("Most common chains"),
         p(class = "about-figure", "Each row is a distinct chain, with the number and share of included days that followed it exactly."),
-        DT::DTOutput("chain_table")
+        DT::DTOutput("chain_table", fill = FALSE)
       ),
       card(
         full_screen = TRUE,
@@ -241,6 +275,28 @@ ui <- page_navbar(
                     value = 0.02, step = 0.01, width = "100%"),
         networkD3::sankeyNetworkOutput("chain_sankey", height = "500px")
       )
+    ),
+    card(show_code("code_chains"))
+  ),
+
+  nav_panel(
+    "Use it in R",
+    intro("Every table and figure in this app comes from the rDaynamica R package, and each one has a ",
+          "\"Show the R code\" link with the code that reproduces it using the app's current settings."),
+    card(
+      card_header("Setup: install rDaynamica and prepare the example data"),
+      p(class = "about-figure", "Run this once in R or RStudio before the code from the other tabs. It installs the package, loads the anonymized example data that ships with it, and runs the standard preprocessing steps. Takes about a minute."),
+      div(class = "code-block",
+          tags$button(type = "button", class = "btn btn-sm btn-outline-secondary copy-code", "Copy"),
+          tags$pre(setup_code))
+    ),
+    card(
+      card_header("Using your own Daynamica data"),
+      p(class = "about-figure",
+        "Point ", code("path2dict()"), " at the folder containing your Daynamica CSV export instead of the example data, and set ",
+        code("file_prefix"), " to match your file names. The package's ",
+        a("README", href = "https://github.com/daynamica/rDaynamica#readme", target = "_blank"),
+        " and example analysis script describe the full workflow, including ready-made HTML reports.")
     )
   )
 )
@@ -263,18 +319,27 @@ server <- function(input, output, session) {
 
   output$valid_days_table <- DT::renderDT({
     DT::datatable(suppressMessages(count_valid_per_days(data.table::copy(example_data$day_summary))),
-                  rownames = FALSE, options = list(dom = "t", ordering = FALSE))
+                  rownames = FALSE, fillContainer = FALSE, options = list(dom = "t", ordering = FALSE))
   })
 
   output$overview_table <- DT::renderDT({
     stats <- overview_statistics(filtered())
     stats[, Days := fifelse(IsWeekend, "Weekends", "Weekdays")]
     stats <- stats[order(Statistics, Days), .(Statistic = Statistics, Days, Median, Mean, SD, Min, Max)]
-    DT::datatable(stats, rownames = FALSE, options = list(dom = "t", pageLength = 50, ordering = FALSE)) |>
+    DT::datatable(stats, rownames = FALSE, fillContainer = FALSE,
+                  options = list(dom = "t", pageLength = 50, ordering = FALSE)) |>
       DT::formatRound(c("Median", "Mean", "SD", "Min", "Max"), digits = 1)
   })
 
+  output$code_valid_days <- renderText(code_valid_days())
+  output$code_overview <- renderText(code_overview(input$min_hours))
+
   # Daily timelines -------------------------------------------------------
+  output$code_timeline <- renderText({
+    req(input$timeline_user)
+    code_timeline(input$min_hours, input$timeline_user)
+  })
+
   observe({
     users <- sort(unique(filtered()$day_summary$user_id))
     days <- table(filtered()$day_summary$user_id)[users]
@@ -302,6 +367,11 @@ server <- function(input, output, session) {
     list(type = input$summary_type, measure = input$summary_measure, group = input$summary_group,
          measure_label = names(which(measure_choices[[input$summary_type]] == input$summary_measure)),
          group_label = names(which(group_choices[[input$summary_type]] == input$summary_group)))
+  })
+
+  output$code_summary <- renderText({
+    a <- summary_args()
+    code_summary(input$min_hours, a$type, a$group, a$measure)
   })
 
   output$summary_title <- renderText({
@@ -356,12 +426,15 @@ server <- function(input, output, session) {
                          mytype = a$type, by_field = a$group)
     tbl[[1]] <- pretty_label(tbl[[1]])
     setnames(tbl, c(a$group_label, sub("_", ": ", names(tbl)[-1])))
-    DT::datatable(tbl, rownames = FALSE, options = list(dom = "t", pageLength = 50, scrollX = TRUE)) |>
+    DT::datatable(tbl, rownames = FALSE, fillContainer = FALSE,
+                  options = list(dom = "t", pageLength = 50, scrollX = TRUE)) |>
       DT::formatRound(names(tbl)[-1], digits = 2)
   })
 
   # Daily rhythm ----------------------------------------------------------
   chord <- reactive(prepare_chord_flows(filtered())) |> bindCache(input$min_hours)
+
+  output$code_chord <- renderText(code_chord(input$min_hours))
 
   chord_minutes <- reactive(round(as.numeric(difftime(input$chord_time, day_start, units = "mins"))))
 
@@ -384,11 +457,15 @@ server <- function(input, output, session) {
     )
   })
 
+  output$code_chains <- renderText({
+    code_chains(input$min_hours, input$chain_trips, input$chain_min_duration, input$chain_collapse, input$sankey_min)
+  })
+
   output$chain_table <- DT::renderDT({
     tbl <- chains() |>
       count(Chain = string, name = "Days", sort = TRUE) |>
       mutate(Share = Days / sum(Days))
-    DT::datatable(tbl, rownames = FALSE, options = list(dom = "tp", pageLength = 12)) |>
+    DT::datatable(tbl, rownames = FALSE, fillContainer = FALSE, options = list(dom = "tp", pageLength = 12)) |>
       DT::formatPercentage("Share", digits = 1)
   })
 
@@ -403,6 +480,11 @@ server <- function(input, output, session) {
     ))
     p
   })
+
+  # Code panels start collapsed, and Shiny doesn't render hidden outputs by default
+  for (id in c("code_valid_days", "code_overview", "code_timeline", "code_summary", "code_chord", "code_chains")) {
+    outputOptions(output, id, suspendWhenHidden = FALSE)
+  }
 }
 
 shinyApp(ui, server)

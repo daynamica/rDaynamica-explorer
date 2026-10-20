@@ -3786,13 +3786,16 @@
   },
   "files": {
     "app.R": {
-      "checksum": "b4871a472011bb55c3fd29a096c33779"
+      "checksum": "40d0c8e3aab3b2a13f7ca1e4a274aab8"
     },
     "data/example_data.rds": {
       "checksum": "7973e6a008a1f6095c7b7a17d7f1a2a0"
     },
     "R/chord.R": {
       "checksum": "8485967f242e8f78bce02c359bc098db"
+    },
+    "R/code.R": {
+      "checksum": "a9977b290671e2b51edb200df902058d"
     },
     "R/timeline.R": {
       "checksum": "7cdcd1555dc474b4e47d0787d3755b40"
