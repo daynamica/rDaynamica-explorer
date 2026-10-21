@@ -168,7 +168,7 @@ show_code <- function(output_id) {
     class = "code-panel",
     tags$summary("Show the R code"),
     div(class = "code-block",
-        tags$button(type = "button", class = "btn btn-sm btn-outline-secondary copy-code", "Copy"),
+        tags$button(type = "button", class = "btn btn-sm btn-outline-secondary copy-code", `aria-label` = "Copy code to clipboard", "Copy"),
         verbatimTextOutput(output_id, placeholder = FALSE))
   )
 }
