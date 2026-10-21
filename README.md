@@ -13,6 +13,7 @@ A sidebar setting (minimum hours of recorded data per day) controls which days a
 | Activities & trips | Average counts, time, and distance per day by activity type, travel mode, or trip purpose | `activity_trip_figure()`, `activity_trip()` |
 | Daily rhythm | Animated chord diagram of transitions between activities and trips across the day | `recategorize_calendar_items()`, `generate_sequence_data()`, `flow_rate_calculator()`, `process_flow_data()` |
 | Activity chains | Most common daily sequences (e.g. HWH) and a Sankey diagram of how days branch out from home | `create_activity_chains()`, `create_sankey_data()`, `create_plot_from_data()` |
+| Surveys | Survey response rates and timing; answers to each activity and trip question compared by activity type, travel mode, trip purpose, or day; end-of-day answers next to each day's recorded behavior | `tidy_calendar_item_survey()`, `tidy_ema_survey()`, `survey_codebook()`, `link_survey_to_items()`, `summarize_survey_by()`, `survey_response_rates()` |
 | Use it in R | Setup code that installs rDaynamica and prepares the example data | `path2dict()` and the preprocessing functions |
 
 Every table and figure has a "Show the R code" panel with rDaynamica code that reproduces it using the app's current settings.
@@ -32,6 +33,7 @@ shiny::runApp()
 - `app.R`: the user interface and server logic
 - `R/chord.R`: helpers that draw one chord-diagram frame (loaded automatically by Shiny)
 - `R/code.R`: the R code shown in the "Show the R code" panels and on the "Use it in R" tab
+- `R/surveys.R`: charts and tables for the Surveys tab
 - `R/timeline.R`: the daily timeline, drawn as hoverable bars (`rDaynamica::plot_indi_temp()` only shows hover details at the ends of each item)
 - `www/logo.png`: the Daynamica logo, used in the header and as the browser tab icon
 - `data/example_data.rds`: the preprocessed example dataset
@@ -52,7 +54,7 @@ Posit Connect deploys this app directly from GitHub using `manifest.json`. After
 
 ```r
 pak::pak(c("Daynamica-Repositories/rDaynamica", "rsconnect"))
-rsconnect::writeManifest(appFiles = c("app.R", "R/chord.R", "R/code.R", "R/timeline.R", "data/example_data.rds", "www/logo.png"))
+rsconnect::writeManifest(appFiles = c("app.R", "R/chord.R", "R/code.R", "R/surveys.R", "R/timeline.R", "data/example_data.rds", "www/logo.png"))
 ```
 
 rDaynamica must be installed from GitHub (as above) when you write the manifest, so Connect knows where to get it.

@@ -113,6 +113,55 @@ code_chains <- function(min_hours, include_trips, min_duration, collapse, sankey
           "create_plot_from_data(sankey_data, start_from_H = TRUE)")
 }
 
+code_survey_participation <- function(min_hours) {
+  snippet(filter_code(min_hours), "",
+          "cis_tidy <- tidy_calendar_item_survey(csv_dict_sub$calendar_item_survey)",
+          "items <- csv_dict_sub$ucalitems_temporal_plot",
+          "",
+          "# Share of activities and complete trips surveyed, and hours until the response",
+          'survey_response_rates(items, cis_tidy, by = "type_decoded")',
+          "",
+          "# The same for each participant",
+          'survey_response_rates(items, cis_tidy, by = c("type_decoded", "user_id"))')
+}
+
+code_survey_question <- function(min_hours, q, by, measure, min_responses) {
+  snippet(filter_code(min_hours), "",
+          "cis_tidy <- tidy_calendar_item_survey(csv_dict_sub$calendar_item_survey)",
+          "",
+          "# The question's answers",
+          "codebook <- survey_codebook(cis_tidy)",
+          sprintf("codebook[codebook$question_id == %d, ]", q),
+          "",
+          if (measure == "mean") "# Average answer by group" else "# Share of responses choosing each answer, by group",
+          "summarize_survey_by(",
+          "  cis_tidy, csv_dict_sub$ucalitems_temporal_plot,",
+          sprintf('  by = "%s", measure = "%s",', by, measure),
+          sprintf("  questions = %d, min_responses = %d", q, as.integer(min_responses)),
+          ")")
+}
+
+code_ema_question <- function(min_hours, q) {
+  snippet(filter_code(min_hours), "",
+          "ema_tidy <- tidy_ema_survey(csv_dict_sub$ema_survey)",
+          "",
+          "# The question's answers",
+          "codebook <- survey_codebook(ema_tidy)",
+          sprintf("codebook[codebook$question_id == %d, ]", q),
+          "",
+          "# Recorded behavior on days with each answer (latest submission per day;",
+          "# a day with several options selected counts once for each)",
+          "library(data.table)",
+          sprintf("latest <- ema_tidy[question_id == %d, .SD[timestamp == max(timestamp)], by = .(user_id, start_date)]", q),
+          "answers <- latest[, .(answer = unlist(response_options)), by = .(user_id, start_date)]",
+          "answers <- merge(answers, csv_dict_sub$day_summary, by = c(\"user_id\", \"start_date\"))",
+          "answers[, .(days = .N, trips = mean(trip_count), activities = mean(activity_count),",
+          "            hours_recorded = mean(with_subtype)), by = answer]",
+          "",
+          "# Or every EMA question as a column of the day summary",
+          "join_ema_to_days(ema_tidy, csv_dict_sub$day_summary)")
+}
+
 # Collapsible code panel with a copy button
 show_code <- function(output_id) {
   tags$details(

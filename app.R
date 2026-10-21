@@ -11,6 +11,15 @@ library(rDaynamica)
 
 example_data <- readRDS("data/example_data.rds")
 
+# Survey tables are tidied once; linking answers to items then keeps only the
+# days included by the sidebar setting
+cis_tidy <- tidy_calendar_item_survey(example_data$calendar_item_survey)
+ema_tidy <- tidy_ema_survey(example_data$ema_survey)
+cis_codebook <- survey_codebook(cis_tidy)
+ema_codebook <- survey_codebook(ema_tidy)
+all_days <- suppressMessages(suppressWarnings(filter_valid_days(example_data, "(interact_with_app>=0)")))
+cis_question_types <- survey_question_types(link_survey_to_items(cis_tidy, all_days$ucalitems_temporal_plot))
+
 format_minutes <- function(m) sprintf("%d:%02d", m %/% 60, m %% 60)
 # The time-of-day slider works in clock times on an arbitrary date
 day_start <- as.POSIXct("2000-01-01 00:00", tz = "UTC")
@@ -280,6 +289,65 @@ ui <- page_navbar(
   ),
 
   nav_panel(
+    "Surveys",
+    intro("Besides recording activities and trips, Daynamica asks participants short survey questions: about specific ",
+          "activities and trips (for example, who they were with or how safe a trip felt), and about their day as a whole. ",
+          "Survey questions differ between studies; these are the questions in the example study."),
+    card(
+      card_header("How often do participants answer?"),
+      about_figure(
+        "Response rates count each activity, and each complete trip (all its legs), once. Response time is the number of hours from the start of the activity or trip to the participant's answer. The chart shows how response rates vary between participants.",
+        list("How much response burden do the surveys place on participants?",
+             "Are some kinds of activities or trips answered more often than others, which could bias survey results?",
+             "How long after an activity do people answer, and how might recall affect their answers?")
+      ),
+      layout_columns(
+        col_widths = c(6, 6),
+        DT::DTOutput("survey_rates_table", fill = FALSE),
+        plotly::plotlyOutput("survey_participant_plot", height = "300px")
+      ),
+      show_code("code_survey_participation")
+    ),
+    card(
+      card_header("Questions about activities and trips"),
+      about_figure(
+        "Pick a question to see how participants answered and how answers compare across activity types, travel modes, trip purposes, or days. Rating questions are compared by their average answer (what the ends of each scale mean isn't recorded in the data); other questions by the share of responses choosing each answer. A trip's main mode is the mode of its longest leg.",
+        list("Do people feel safer, or less stressed, on some travel modes than others?",
+             "Which activities do people do alone, and which with family or friends?",
+             "How does the experience of a trip depend on its purpose, or differ between weekdays and weekends?")
+      ),
+      layout_columns(
+        col_widths = c(6, 3, 3),
+        selectInput("survey_question", "Question", choices = survey_question_choices(cis_codebook, cis_question_types), width = "100%"),
+        selectInput("survey_by", "Compare by", choices = NULL, width = "100%"),
+        sliderInput("survey_min_n", "Hide groups with fewer responses than", min = 5, max = 100, value = 20, step = 5, width = "100%")
+      ),
+      layout_columns(
+        col_widths = c(4, 8),
+        div(h6("All answers"), DT::DTOutput("survey_answers", fill = FALSE)),
+        plotly::plotlyOutput("survey_compare_plot", height = "460px")
+      ),
+      show_code("code_survey_question")
+    ),
+    card(
+      card_header("End-of-day questions"),
+      about_figure(
+        "Each evening, participants answer a few questions about their whole day. The table compares days with each answer using what the app recorded on those days, which shows how self-reports relate to measured behavior. If a participant answered more than once in a day, the latest answers are used.",
+        list("Do people who shop online make fewer shopping trips?",
+             "Which transportation barriers keep people from making trips they would like to make?",
+             "Do days on which people report discrimination look different in how they travel?")
+      ),
+      selectInput("ema_question", "Question", choices = ema_question_choices(ema_codebook), width = "100%"),
+      layout_columns(
+        col_widths = c(5, 7),
+        plotly::plotlyOutput("ema_answers_plot", height = "360px"),
+        div(h6("Recorded behavior on days with each answer"), DT::DTOutput("ema_behavior", fill = FALSE))
+      ),
+      show_code("code_ema_question")
+    )
+  ),
+
+  nav_panel(
     "Use it in R",
     intro("Every table and figure in this app comes from the rDaynamica R package, and each one has a ",
           "\"Show the R code\" link with the code that reproduces it using the app's current settings."),
@@ -481,8 +549,103 @@ server <- function(input, output, session) {
     p
   })
 
+  # Surveys --------------------------------------------------------------
+  survey_items <- reactive(filtered()$ucalitems_temporal_plot)
+  survey_linked <- reactive(link_survey_to_items(cis_tidy, survey_items())) |> bindCache(input$min_hours)
+
+  output$survey_rates_table <- DT::renderDT({
+    rates <- survey_response_rates(survey_items(), cis_tidy)
+    tbl <- rates[, .(`Item type` = pretty_label(type_decoded), Total = units, Surveyed = surveyed,
+                     `Response rate` = response_rate, `Median hours to respond` = median_delay_hours,
+                     `90th percentile hours` = p90_delay_hours)]
+    DT::datatable(tbl, rownames = FALSE, fillContainer = FALSE, options = list(dom = "t", ordering = FALSE)) |>
+      DT::formatPercentage("Response rate", digits = 1) |>
+      DT::formatRound(c("Median hours to respond", "90th percentile hours"), digits = 1)
+  })
+
+  output$survey_participant_plot <- plotly::renderPlotly({
+    rates <- survey_response_rates(survey_items(), cis_tidy, by = c("type_decoded", "user_id"))
+    plotly::plot_ly(rates, x = ~response_rate, color = ~pretty_label(type_decoded), colors = c("#538037", "#3F5A6B"),
+                    type = "histogram", xbins = list(start = 0, end = 1.0001, size = 0.1),
+                    hovertemplate = "%{y} participants<extra>%{fullData.name}</extra>") |>
+      plotly::layout(barmode = "group", xaxis = list(title = "Share of items surveyed", tickformat = ".0%", fixedrange = TRUE),
+                     yaxis = list(title = "Participants", fixedrange = TRUE), legend = list(orientation = "h", y = 1.12),
+                     font = list(family = "Inter, sans-serif")) |>
+      plotly::config(displaylogo = FALSE)
+  })
+
+  output$code_survey_participation <- renderText(code_survey_participation(input$min_hours))
+
+  survey_question_type <- reactive({
+    cis_question_types[question_id == as.integer(req(input$survey_question)), type_decoded]
+  })
+
+  observeEvent(input$survey_question, {
+    choices <- survey_group_choices[[survey_question_type()]]
+    selected <- if (isTRUE(input$survey_by %in% choices)) input$survey_by else choices[[1]]
+    updateSelectInput(session, "survey_by", choices = choices, selected = selected)
+  })
+
+  survey_args <- reactive({
+    q <- as.integer(req(input$survey_question))
+    choices <- survey_group_choices[[survey_question_type()]]
+    req(input$survey_by %in% choices)
+    list(q = q, by = input$survey_by, group_label = names(which(choices == input$survey_by)),
+         measure = if (is_rating_question(cis_codebook, q)) "mean" else "share")
+  })
+
+  output$survey_answers <- DT::renderDT({
+    q <- as.integer(req(input$survey_question))
+    tbl <- survey_codebook(survey_linked())[question_id == q, .(Answer = option, Responses = n, Share = share)]
+    DT::datatable(tbl, rownames = FALSE, fillContainer = FALSE,
+                  options = list(dom = "t", pageLength = 50, ordering = FALSE)) |>
+      DT::formatPercentage("Share", digits = 1)
+  })
+
+  output$survey_compare_plot <- plotly::renderPlotly({
+    a <- survey_args()
+    s <- summarize_survey_by(cis_tidy, survey_items(), by = a$by, measure = a$measure, questions = a$q,
+                             min_responses = input$survey_min_n)
+    validate(need(nrow(s) > 0, "No group has enough responses. Try lowering the minimum."))
+    if (a$measure == "mean") {
+      survey_bar_plot(s, a$by, a$group_label)
+    } else {
+      survey_heatmap(s, a$by, a$group_label, cis_codebook[question_id == a$q, option])
+    }
+  })
+
+  output$code_survey_question <- renderText({
+    a <- survey_args()
+    code_survey_question(input$min_hours, a$q, a$by, a$measure, input$survey_min_n)
+  })
+
+  ema_filtered <- reactive({
+    days <- unique(as.data.table(filtered()$day_summary)[, .(user_id, start_date = as.Date(start_date))])
+    merge(ema_tidy, days, by = c("user_id", "start_date"))
+  }) |> bindCache(input$min_hours)
+
+  ema_filtered_codebook <- reactive(survey_codebook(ema_filtered())) |> bindCache(input$min_hours)
+
+  output$ema_answers_plot <- plotly::renderPlotly({
+    q <- as.integer(req(input$ema_question))
+    codebook <- ema_filtered_codebook()
+    validate(need(nrow(codebook[question_id == q]) > 0, "No answers on the included days."))
+    answer_share_plot(codebook, q)
+  })
+
+  output$ema_behavior <- DT::renderDT({
+    q <- as.integer(req(input$ema_question))
+    tbl <- ema_behavior_table(ema_filtered(), filtered()$day_summary, ema_filtered_codebook(), q)
+    DT::datatable(tbl, rownames = FALSE, fillContainer = FALSE,
+                  options = list(dom = "t", pageLength = 50, ordering = FALSE)) |>
+      DT::formatRound(c("Trips per day", "Activities per day", "Hours recorded"), digits = 1)
+  })
+
+  output$code_ema_question <- renderText(code_ema_question(input$min_hours, as.integer(req(input$ema_question))))
+
   # Code panels start collapsed, and Shiny doesn't render hidden outputs by default
-  for (id in c("code_valid_days", "code_overview", "code_timeline", "code_summary", "code_chord", "code_chains")) {
+  for (id in c("code_valid_days", "code_overview", "code_timeline", "code_summary", "code_chord", "code_chains",
+               "code_survey_participation", "code_survey_question", "code_ema_question")) {
     outputOptions(output, id, suspendWhenHidden = FALSE)
   }
 }
