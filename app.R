@@ -73,7 +73,8 @@ app_theme <- bs_theme(
     .code-block { position: relative; margin-top: .5rem; }
     .code-block pre { background: #f6f8f5; border: 1px solid #dfe7da; border-radius: 4px; padding: .75rem;
                       font-size: .8rem; white-space: pre; overflow-x: auto; margin: 0; }
-    .code-block .copy-code { position: absolute; top: .4rem; right: .4rem; background: #fff; }
+    .code-block .copy-code { position: absolute; top: .4rem; right: .4rem; background: #fff; transition: background-color .15s ease-in-out, border-color .15s ease-in-out, color .15s ease-in-out; }
+    .code-block .copy-code.copied { background-color: %1$s; color: #fff; border-color: %1$s; }
     .code-block .copy-code:focus-visible { outline: 2px solid %1$s; outline-offset: 2px; }
   ", daynamica_green, daynamica_green_dark))
 
@@ -97,10 +98,12 @@ copy_code_js <- tags$script(HTML("
     };
     if (!navigator.clipboard) { selectCode(); return; }
     navigator.clipboard.writeText(pre.innerText).then(function () {
-      button.textContent = 'Copied';
+      button.textContent = 'Copied!';
+      button.classList.add('copied');
       button.setAttribute('aria-label', 'Copied to clipboard');
       setTimeout(function () {
         button.textContent = 'Copy';
+        button.classList.remove('copied');
         button.setAttribute('aria-label', 'Copy code to clipboard');
       }, 1500);
     }, selectCode);
@@ -147,7 +150,7 @@ ui <- page_navbar(
     hr(),
     helpText(
       "This app uses an anonymized sample of Daynamica data and the open-source ",
-      a("rDaynamica R package", href = "https://github.com/Daynamica-Repositories/rDaynamica", target = "_blank"),
+      a("rDaynamica R package", href = "https://github.com/Daynamica-Repositories/rDaynamica", target = "_blank", rel = "noopener noreferrer", `aria-label` = "rDaynamica R package (opens in a new tab)"),
       ". Everything shown here can be reproduced in R with your own data."
     )
   ),
@@ -256,7 +259,7 @@ ui <- page_navbar(
       card(div(
         class = "chord-wrap",
         plotOutput("chord_plot", height = "620px"),
-        div(class = "chord-loading",
+        div(class = "chord-loading", role = "status", `aria-live` = "polite",
             strong("Preparing the daily rhythm diagram…"),
             span("This takes a few seconds the first time, and after changing which days count."))
       ))
@@ -373,7 +376,7 @@ ui <- page_navbar(
       p(class = "about-figure",
         "Point ", code("path2dict()"), " at the folder containing your Daynamica CSV export instead of the example data, and set ",
         code("file_prefix"), " to match your file names. The package's ",
-        a("README", href = "https://github.com/Daynamica-Repositories/rDaynamica#readme", target = "_blank"),
+        a("README", href = "https://github.com/Daynamica-Repositories/rDaynamica#readme", target = "_blank", rel = "noopener noreferrer", `aria-label` = "rDaynamica R package README (opens in a new tab)"),
         " and example analysis script describe the full workflow, including ready-made HTML reports.")
     )
   )
