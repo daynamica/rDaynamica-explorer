@@ -76,6 +76,7 @@ app_theme <- bs_theme(
     .code-block .copy-code { position: absolute; top: .4rem; right: .4rem; background: #fff; transition: background-color .15s ease-in-out, border-color .15s ease-in-out, color .15s ease-in-out; }
     .code-block .copy-code.copied { background-color: %1$s; color: #fff; border-color: %1$s; }
     .code-block .copy-code:focus-visible { outline: 2px solid %1$s; outline-offset: 2px; }
+    .slider-animate-button:focus-visible { outline: 2px solid %1$s; outline-offset: 2px; border-radius: 50%%; }
   ", daynamica_green, daynamica_green_dark))
 
 copy_code_js <- tags$script(HTML("
@@ -98,12 +99,14 @@ copy_code_js <- tags$script(HTML("
     };
     if (!navigator.clipboard) { selectCode(); return; }
     navigator.clipboard.writeText(pre.innerText).then(function () {
-      button.textContent = 'Copied!';
-      button.classList.add('copied');
+      button.textContent = 'Copied';
+      button.classList.add('btn-success');
+      button.classList.remove('btn-outline-secondary');
       button.setAttribute('aria-label', 'Copied to clipboard');
       setTimeout(function () {
         button.textContent = 'Copy';
-        button.classList.remove('copied');
+        button.classList.remove('btn-success');
+        button.classList.add('btn-outline-secondary');
         button.setAttribute('aria-label', 'Copy code to clipboard');
       }, 1500);
     }, selectCode);
@@ -128,7 +131,7 @@ about_figure <- function(shows, questions) {
 intro <- function(...) p(class = "lead fs-6 mb-3", ...)
 
 ui <- page_navbar(
-  title = tags$span(tags$img(src = "logo.png", alt = ""), "Daynamica Data Explorer"),
+  title = tags$span(tags$img(src = "logo.png", alt = "", `aria-hidden` = "true"), "Daynamica Data Explorer"),
   window_title = "Daynamica Data Explorer",
   theme = app_theme,
   navbar_options = navbar_options(bg = "#ffffff", theme = "light"),
@@ -368,7 +371,7 @@ ui <- page_navbar(
       card_header("Setup: install rDaynamica and prepare the example data"),
       p(class = "about-figure", "Run this once in R or RStudio before the code from the other tabs. It installs the package, loads the anonymized example data that ships with it, and runs the standard preprocessing steps. Takes about a minute."),
       div(class = "code-block",
-          tags$button(type = "button", class = "btn btn-sm btn-outline-secondary copy-code", `aria-label` = "Copy code to clipboard", "Copy"),
+          tags$button(type = "button", class = "btn btn-sm btn-outline-secondary copy-code", `aria-label` = "Copy code to clipboard", `aria-live` = "polite", "Copy"),
           tags$pre(setup_code))
     ),
     card(
