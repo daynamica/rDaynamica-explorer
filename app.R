@@ -68,11 +68,13 @@ app_theme <- bs_theme(
       display: flex; opacity: 0; animation: chord-loading-in .2s ease-out .5s forwards; }
     @keyframes chord-loading-in { to { opacity: 1; } }
     .code-panel { margin-top: .75rem; }
-    .code-panel > summary { cursor: pointer; color: %2$s; font-weight: 600; font-size: .9rem; }
+    .code-panel > summary { cursor: pointer; color: %2$s; font-weight: 600; font-size: .9rem; border-radius: 4px; }
+    .code-panel > summary:focus-visible { outline: 2px solid %1$s; outline-offset: 2px; }
     .code-block { position: relative; margin-top: .5rem; }
     .code-block pre { background: #f6f8f5; border: 1px solid #dfe7da; border-radius: 4px; padding: .75rem;
                       font-size: .8rem; white-space: pre; overflow-x: auto; margin: 0; }
     .code-block .copy-code { position: absolute; top: .4rem; right: .4rem; background: #fff; }
+    .code-block .copy-code:focus-visible { outline: 2px solid %1$s; outline-offset: 2px; }
   ", daynamica_green, daynamica_green_dark))
 
 copy_code_js <- tags$script(HTML("
@@ -87,12 +89,20 @@ copy_code_js <- tags$script(HTML("
       selection.removeAllRanges();
       selection.addRange(range);
       button.textContent = 'Press Ctrl+C to copy';
-      setTimeout(function () { button.textContent = 'Copy'; }, 3000);
+      button.setAttribute('aria-label', 'Press Ctrl+C to copy code');
+      setTimeout(function () {
+        button.textContent = 'Copy';
+        button.setAttribute('aria-label', 'Copy code to clipboard');
+      }, 3000);
     };
     if (!navigator.clipboard) { selectCode(); return; }
     navigator.clipboard.writeText(pre.innerText).then(function () {
       button.textContent = 'Copied';
-      setTimeout(function () { button.textContent = 'Copy'; }, 1500);
+      button.setAttribute('aria-label', 'Copied to clipboard');
+      setTimeout(function () {
+        button.textContent = 'Copy';
+        button.setAttribute('aria-label', 'Copy code to clipboard');
+      }, 1500);
     }, selectCode);
   });
 "))
@@ -355,7 +365,7 @@ ui <- page_navbar(
       card_header("Setup: install rDaynamica and prepare the example data"),
       p(class = "about-figure", "Run this once in R or RStudio before the code from the other tabs. It installs the package, loads the anonymized example data that ships with it, and runs the standard preprocessing steps. Takes about a minute."),
       div(class = "code-block",
-          tags$button(type = "button", class = "btn btn-sm btn-outline-secondary copy-code", "Copy"),
+          tags$button(type = "button", class = "btn btn-sm btn-outline-secondary copy-code", `aria-label` = "Copy code to clipboard", "Copy"),
           tags$pre(setup_code))
     ),
     card(
