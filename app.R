@@ -50,8 +50,28 @@ app_theme <- bs_theme(
   "link-color" = daynamica_green_dark
 ) |>
   bs_add_rules(sprintf("
+    .skip-to-content {
+      position: absolute;
+      top: -100px;
+      left: 0;
+      background: %2$s;
+      color: #ffffff;
+      padding: .5rem 1rem;
+      z-index: 9999;
+      font-weight: 600;
+      text-decoration: none;
+      border-radius: 0 0 4px 0;
+      transition: top 0.2s ease;
+    }
+    .skip-to-content:focus, .skip-to-content:focus-visible {
+      top: 0;
+      outline: 2px solid %1$s;
+      outline-offset: 2px;
+    }
     .navbar { border-bottom: 3px solid %1$s; }
+    .navbar .nav-link:focus-visible { outline: 2px solid %1$s; outline-offset: -2px; border-radius: 4px; }
     .navbar .nav-link.active { color: %2$s !important; font-weight: 600; box-shadow: inset 0 -3px 0 %1$s; }
+    .nav-link:focus-visible, a:focus-visible { outline: 2px solid %1$s; outline-offset: 2px; border-radius: 2px; }
     .navbar-brand img { height: 28px; margin-right: .5rem; vertical-align: -6px; }
     .about-figure { font-size: .925rem; }
     .research-questions { background: #f2f7ee; border-left: 4px solid %1$s; border-radius: 4px;
@@ -71,9 +91,13 @@ app_theme <- bs_theme(
     .code-panel > summary { cursor: pointer; color: %2$s; font-weight: 600; font-size: .9rem; border-radius: 4px; }
     .code-panel > summary:focus-visible { outline: 2px solid %1$s; outline-offset: 2px; }
     .code-block { position: relative; margin-top: .5rem; }
+    .chord-label-badge { display: inline-block; background: #f2f7ee; border: 1px solid #dfe7da;
+                         border-left: 3px solid %1$s; padding: .4rem .75rem; border-radius: 4px;
+                         font-weight: 500; font-size: .875rem; color: %2$s; margin-top: .5rem; }
     .code-block pre { background: #f6f8f5; border: 1px solid #dfe7da; border-radius: 4px; padding: .75rem;
                       font-size: .8rem; white-space: pre; overflow-x: auto; margin: 0; }
-    .code-block .copy-code { position: absolute; top: .4rem; right: .4rem; background: #fff; }
+    .code-block .copy-code { position: absolute; top: .4rem; right: .4rem; background: #fff; transition: background-color .15s ease-in-out, border-color .15s ease-in-out, color .15s ease-in-out; }
+    .code-block .copy-code.copied { background-color: %1$s; color: #fff; border-color: %1$s; }
     .code-block .copy-code:focus-visible { outline: 2px solid %1$s; outline-offset: 2px; }
     .slider-animate-button:focus-visible { outline: 2px solid %1$s; outline-offset: 2px; border-radius: 50%%; }
   ", daynamica_green, daynamica_green_dark))
@@ -128,6 +152,23 @@ copy_code_js <- tags$script(HTML("
   });
 "))
 
+slider_animate_js <- tags$script(HTML("
+  function updateSliderAnimateAria() {
+    var animBtn = document.querySelector('.slider-animate-button');
+    if (!animBtn) return;
+    if (!animBtn.hasAttribute('role')) animBtn.setAttribute('role', 'button');
+    var stopSpan = animBtn.querySelector('.stop');
+    var isPlaying = stopSpan && window.getComputedStyle(stopSpan).display !== 'none';
+    animBtn.setAttribute('aria-label', isPlaying ? 'Pause daily rhythm animation' : 'Play daily rhythm animation');
+  }
+  document.addEventListener('DOMContentLoaded', updateSliderAnimateAria);
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('.slider-animate-button')) {
+      setTimeout(updateSliderAnimateAria, 50);
+    }
+  });
+"))
+
 stat_box <- function(title, output_id) {
   value_box(title, textOutput(output_id), theme = value_box_theme(bg = "#f6f9f3", fg = daynamica_ink))
 }
@@ -152,8 +193,10 @@ ui <- page_navbar(
   navbar_options = navbar_options(bg = "#ffffff", theme = "light"),
   fillable = FALSE,
   header = tagList(
+    tags$a(href = "#main-content", class = "skip-to-content", "Skip to main content"),
     tags$head(tags$link(rel = "icon", type = "image/png", href = "logo.png")),
     copy_code_js,
+    slider_animate_js,
     # The delay keeps the spinner from flickering on quick updates
     useBusyIndicators(spinners = TRUE, pulse = TRUE),
     busyIndicatorOptions(spinner_type = "ring2", spinner_color = daynamica_green, spinner_size = "48px",
@@ -168,13 +211,14 @@ ui <- page_navbar(
     hr(),
     helpText(
       "This app uses an anonymized sample of Daynamica data and the open-source ",
-      a("rDaynamica R package", href = "https://github.com/Daynamica-Repositories/rDaynamica", target = "_blank", rel = "noopener noreferrer", title = "opens in new tab"),
+      a("rDaynamica R package", href = "https://github.com/Daynamica-Repositories/rDaynamica", target = "_blank", rel = "noopener noreferrer", title = "opens in new tab", `aria-label` = "rDaynamica R package (opens in new tab)"),
       ". Everything shown here can be reproduced in R with your own data."
     )
   ),
 
   nav_panel(
     "Overview",
+    div(id = "main-content", tabindex = "-1"),
     intro("Daynamica is a smartphone app that detects participants' activities and trips throughout the day. ",
           "Participants review them in a daily calendar, label what they were doing and how they traveled, and answer ",
           "short surveys about specific activities and trips and about how they are feeling in the moment. ",
@@ -394,7 +438,7 @@ ui <- page_navbar(
       p(class = "about-figure",
         "Point ", code("path2dict()"), " at the folder containing your Daynamica CSV export instead of the example data, and set ",
         code("file_prefix"), " to match your file names. The package's ",
-        a("README", href = "https://github.com/Daynamica-Repositories/rDaynamica#readme", target = "_blank", rel = "noopener noreferrer", title = "opens in new tab"),
+        a("README", href = "https://github.com/Daynamica-Repositories/rDaynamica#readme", target = "_blank", rel = "noopener noreferrer", title = "opens in new tab", `aria-label` = "rDaynamica R package README (opens in new tab)"),
         " and example analysis script describe the full workflow, including ready-made HTML reports.")
     )
   )
