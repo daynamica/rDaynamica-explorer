@@ -71,6 +71,7 @@ app_theme <- bs_theme(
     .navbar { border-bottom: 3px solid %1$s; }
     .navbar .nav-link:focus-visible { outline: 2px solid %1$s; outline-offset: -2px; border-radius: 4px; }
     .navbar .nav-link.active { color: %2$s !important; font-weight: 600; box-shadow: inset 0 -3px 0 %1$s; }
+    .nav-link:focus-visible, a:focus-visible { outline: 2px solid %1$s; outline-offset: 2px; border-radius: 2px; }
     .navbar-brand img { height: 28px; margin-right: .5rem; vertical-align: -6px; }
     .about-figure { font-size: .925rem; }
     .research-questions { background: #f2f7ee; border-left: 4px solid %1$s; border-radius: 4px;
