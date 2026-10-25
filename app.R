@@ -112,6 +112,32 @@ copy_code_js <- tags$script(HTML("
   });
 "))
 
+slider_animate_js <- tags$script(HTML("
+  document.addEventListener('DOMContentLoaded', function () {
+    function updateSliderBtn(btn) {
+      var isPlaying = btn.querySelector('.stop, .glyphicon-pause, .fa-pause') !== null || btn.classList.contains('playing');
+      var label = isPlaying ? 'Pause time of day animation' : 'Play time of day animation';
+      var title = isPlaying ? 'Pause animation' : 'Play animation';
+      btn.setAttribute('aria-label', label);
+      btn.setAttribute('title', title);
+    }
+
+    function initButtons() {
+      document.querySelectorAll('.slider-animate-button').forEach(updateSliderBtn);
+    }
+
+    initButtons();
+    setTimeout(initButtons, 500);
+
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest('.slider-animate-button');
+      if (btn) {
+        setTimeout(function () { updateSliderBtn(btn); }, 50);
+      }
+    });
+  });
+"))
+
 stat_box <- function(title, output_id) {
   value_box(title, textOutput(output_id), theme = value_box_theme(bg = "#f6f9f3", fg = daynamica_ink))
 }
@@ -138,6 +164,7 @@ ui <- page_navbar(
   header = tagList(
     tags$head(tags$link(rel = "icon", type = "image/png", href = "logo.png")),
     copy_code_js,
+    slider_animate_js,
     # The delay keeps the spinner from flickering on quick updates
     useBusyIndicators(spinners = TRUE, pulse = TRUE),
     busyIndicatorOptions(spinner_type = "ring2", spinner_color = daynamica_green, spinner_size = "48px",
