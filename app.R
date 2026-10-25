@@ -135,6 +135,23 @@ copy_code_js <- tags$script(HTML("
   });
 "))
 
+slider_animate_js <- tags$script(HTML("
+  function updateSliderAnimateAria() {
+    var animBtn = document.querySelector('.slider-animate-button');
+    if (!animBtn) return;
+    if (!animBtn.hasAttribute('role')) animBtn.setAttribute('role', 'button');
+    var stopSpan = animBtn.querySelector('.stop');
+    var isPlaying = stopSpan && window.getComputedStyle(stopSpan).display !== 'none';
+    animBtn.setAttribute('aria-label', isPlaying ? 'Pause daily rhythm animation' : 'Play daily rhythm animation');
+  }
+  document.addEventListener('DOMContentLoaded', updateSliderAnimateAria);
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('.slider-animate-button')) {
+      setTimeout(updateSliderAnimateAria, 50);
+    }
+  });
+"))
+
 stat_box <- function(title, output_id) {
   value_box(title, textOutput(output_id), theme = value_box_theme(bg = "#f6f9f3", fg = daynamica_ink))
 }
@@ -162,6 +179,7 @@ ui <- page_navbar(
     tags$a(href = "#main-content", class = "skip-to-content", "Skip to main content"),
     tags$head(tags$link(rel = "icon", type = "image/png", href = "logo.png")),
     copy_code_js,
+    slider_animate_js,
     # The delay keeps the spinner from flickering on quick updates
     useBusyIndicators(spinners = TRUE, pulse = TRUE),
     busyIndicatorOptions(spinner_type = "ring2", spinner_color = daynamica_green, spinner_size = "48px",
