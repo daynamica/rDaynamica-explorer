@@ -117,11 +117,13 @@ copy_code_js <- tags$script(HTML("
       button.classList.add('btn-success', 'copied');
       button.classList.remove('btn-outline-secondary');
       button.setAttribute('aria-label', 'Press Ctrl+C to copy code');
+      button.setAttribute('title', 'Press Ctrl+C to copy code');
       setTimeout(function () {
         button.textContent = 'Copy';
         button.classList.remove('btn-success', 'copied');
         button.classList.add('btn-outline-secondary');
         button.setAttribute('aria-label', 'Copy code to clipboard');
+        button.setAttribute('title', 'Copy code to clipboard');
       }, 3000);
     };
     if (!navigator.clipboard) { selectCode(); return; }
@@ -130,11 +132,13 @@ copy_code_js <- tags$script(HTML("
       button.classList.add('btn-success', 'copied');
       button.classList.remove('btn-outline-secondary');
       button.setAttribute('aria-label', 'Copied to clipboard');
+      button.setAttribute('title', 'Copied to clipboard');
       setTimeout(function () {
         button.textContent = 'Copy';
         button.classList.remove('btn-success', 'copied');
         button.classList.add('btn-outline-secondary');
         button.setAttribute('aria-label', 'Copy code to clipboard');
+        button.setAttribute('title', 'Copy code to clipboard');
       }, 1500);
     }, selectCode);
   });
@@ -147,7 +151,9 @@ slider_animate_js <- tags$script(HTML("
     if (!animBtn.hasAttribute('role')) animBtn.setAttribute('role', 'button');
     var stopSpan = animBtn.querySelector('.stop');
     var isPlaying = stopSpan && window.getComputedStyle(stopSpan).display !== 'none';
-    animBtn.setAttribute('aria-label', isPlaying ? 'Pause daily rhythm animation' : 'Play daily rhythm animation');
+    var label = isPlaying ? 'Pause daily rhythm animation' : 'Play daily rhythm animation';
+    animBtn.setAttribute('aria-label', label);
+    animBtn.setAttribute('title', label);
   }
   document.addEventListener('DOMContentLoaded', updateSliderAnimateAria);
   document.addEventListener('click', function (e) {
@@ -159,6 +165,32 @@ slider_animate_js <- tags$script(HTML("
     if (e.target.closest('.slider-animate-button') && (e.key === ' ' || e.key === 'Enter')) {
       setTimeout(updateSliderAnimateAria, 50);
     }
+  });
+"))
+
+slider_animate_js <- tags$script(HTML("
+  document.addEventListener('DOMContentLoaded', function () {
+    function updateSliderBtn(btn) {
+      var isPlaying = btn.querySelector('.stop, .glyphicon-pause, .fa-pause') !== null || btn.classList.contains('playing');
+      var label = isPlaying ? 'Pause time of day animation' : 'Play time of day animation';
+      var title = isPlaying ? 'Pause animation' : 'Play animation';
+      btn.setAttribute('aria-label', label);
+      btn.setAttribute('title', title);
+    }
+
+    function initButtons() {
+      document.querySelectorAll('.slider-animate-button').forEach(updateSliderBtn);
+    }
+
+    initButtons();
+    setTimeout(initButtons, 500);
+
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest('.slider-animate-button');
+      if (btn) {
+        setTimeout(function () { updateSliderBtn(btn); }, 50);
+      }
+    });
   });
 "))
 
@@ -302,7 +334,7 @@ ui <- page_navbar(
         sliderInput("chord_time", "Time of day", min = day_start, max = day_start + 1425 * 60,
                     value = day_start + 480 * 60, step = 15 * 60, timeFormat = "%H:%M", timezone = "+0000",
                     ticks = FALSE, animate = animationOptions(interval = 1500)),
-        div(class = "chord-label-badge", `aria-live` = "polite", textOutput("chord_label", inline = TRUE)),
+        div(`aria-live` = "polite", `aria-atomic` = "true", textOutput("chord_label")),
         about_figure(
           "Each segment around the circle is a category, sized by the number of participant-days flowing out of and into it at this time. Ribbons show what people were doing 15 minutes later: a ribbon that loops back to its own segment means they kept doing the same thing, and a ribbon to another segment means they switched. Detailed categories are grouped (for example, car, bus, and rail are all Motorized Trip) to keep the diagram readable.",
           list("When are transitions between activities most common, and when are travel peaks?",
