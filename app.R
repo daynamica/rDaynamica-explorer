@@ -105,34 +105,50 @@ app_theme <- bs_theme(
 copy_code_js <- tags$script(HTML("
   document.addEventListener('click', function (e) {
     var button = e.target.closest('.copy-code');
-    if (!button) return;
-    var pre = button.parentElement.querySelector('pre');
-    var selectCode = function () {
-      var range = document.createRange();
-      range.selectNodeContents(pre);
-      var selection = window.getSelection();
-      selection.removeAllRanges();
-      selection.addRange(range);
-      button.textContent = 'Press Ctrl+C to copy';
-      button.setAttribute('aria-label', 'Press Ctrl+C to copy code');
+    if (button) {
+      var pre = button.parentElement.querySelector('pre');
+      var selectCode = function () {
+        var range = document.createRange();
+        range.selectNodeContents(pre);
+        var selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+        button.textContent = 'Press Ctrl+C to copy';
+        button.setAttribute('aria-label', 'Press Ctrl+C to copy code');
+        setTimeout(function () {
+          button.textContent = 'Copy';
+          button.setAttribute('aria-label', 'Copy code to clipboard');
+        }, 3000);
+      };
+      if (!navigator.clipboard) { selectCode(); return; }
+      navigator.clipboard.writeText(pre.innerText).then(function () {
+        button.textContent = 'Copied';
+        button.classList.add('btn-success');
+        button.classList.remove('btn-outline-secondary');
+        button.setAttribute('aria-label', 'Copied to clipboard');
+        setTimeout(function () {
+          button.textContent = 'Copy';
+          button.classList.remove('btn-success');
+          button.classList.add('btn-outline-secondary');
+          button.setAttribute('aria-label', 'Copy code to clipboard');
+        }, 1500);
+      }, selectCode);
+    }
+
+    if (e.target.closest('.slider-animate-button')) {
       setTimeout(function () {
-        button.textContent = 'Copy';
-        button.setAttribute('aria-label', 'Copy code to clipboard');
-      }, 3000);
-    };
-    if (!navigator.clipboard) { selectCode(); return; }
-    navigator.clipboard.writeText(pre.innerText).then(function () {
-      button.textContent = 'Copied';
-      button.classList.add('btn-success');
-      button.classList.remove('btn-outline-secondary');
-      button.setAttribute('aria-label', 'Copied to clipboard');
-      setTimeout(function () {
-        button.textContent = 'Copy';
-        button.classList.remove('btn-success');
-        button.classList.add('btn-outline-secondary');
-        button.setAttribute('aria-label', 'Copy code to clipboard');
-      }, 1500);
-    }, selectCode);
+        document.querySelectorAll('.slider-animate-button').forEach(function (btn) {
+          var isPlaying = btn.classList.contains('playing') || btn.querySelector('.glyphicon-pause, .fa-pause');
+          btn.setAttribute('aria-label', isPlaying ? 'Pause animation' : 'Start animation');
+        });
+      }, 50);
+    }
+  });
+
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.slider-animate-button').forEach(function (btn) {
+      btn.setAttribute('aria-label', 'Start animation');
+    });
   });
 "))
 
@@ -293,7 +309,7 @@ ui <- page_navbar(
         sliderInput("chord_time", "Time of day", min = day_start, max = day_start + 1425 * 60,
                     value = day_start + 480 * 60, step = 15 * 60, timeFormat = "%H:%M", timezone = "+0000",
                     ticks = FALSE, animate = animationOptions(interval = 1500)),
-        div(class = "chord-label-badge", `aria-live` = "polite", textOutput("chord_label", inline = TRUE)),
+        div(`aria-live` = "polite", `aria-atomic` = "true", textOutput("chord_label")),
         about_figure(
           "Each segment around the circle is a category, sized by the number of participant-days flowing out of and into it at this time. Ribbons show what people were doing 15 minutes later: a ribbon that loops back to its own segment means they kept doing the same thing, and a ribbon to another segment means they switched. Detailed categories are grouped (for example, car, bus, and rail are all Motorized Trip) to keep the diagram readable.",
           list("When are transitions between activities most common, and when are travel peaks?",
