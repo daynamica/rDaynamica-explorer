@@ -114,10 +114,14 @@ copy_code_js <- tags$script(HTML("
       selection.removeAllRanges();
       selection.addRange(range);
       button.textContent = 'Press Ctrl+C to copy';
+      button.classList.add('btn-success', 'copied');
+      button.classList.remove('btn-outline-secondary');
       button.setAttribute('aria-label', 'Press Ctrl+C to copy code');
       button.setAttribute('title', 'Press Ctrl+C to copy code');
       setTimeout(function () {
         button.textContent = 'Copy';
+        button.classList.remove('btn-success', 'copied');
+        button.classList.add('btn-outline-secondary');
         button.setAttribute('aria-label', 'Copy code to clipboard');
         button.setAttribute('title', 'Copy code to clipboard');
       }, 3000);
@@ -154,6 +158,11 @@ slider_animate_js <- tags$script(HTML("
   document.addEventListener('DOMContentLoaded', updateSliderAnimateAria);
   document.addEventListener('click', function (e) {
     if (e.target.closest('.slider-animate-button')) {
+      setTimeout(updateSliderAnimateAria, 50);
+    }
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.target.closest('.slider-animate-button') && (e.key === ' ' || e.key === 'Enter')) {
       setTimeout(updateSliderAnimateAria, 50);
     }
   });
