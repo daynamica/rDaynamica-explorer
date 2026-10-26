@@ -50,8 +50,28 @@ app_theme <- bs_theme(
   "link-color" = daynamica_green_dark
 ) |>
   bs_add_rules(sprintf("
+    .skip-to-content {
+      position: absolute;
+      top: -100px;
+      left: 0;
+      background: %2$s;
+      color: #ffffff;
+      padding: .5rem 1rem;
+      z-index: 9999;
+      font-weight: 600;
+      text-decoration: none;
+      border-radius: 0 0 4px 0;
+      transition: top 0.2s ease;
+    }
+    .skip-to-content:focus, .skip-to-content:focus-visible {
+      top: 0;
+      outline: 2px solid %1$s;
+      outline-offset: 2px;
+    }
     .navbar { border-bottom: 3px solid %1$s; }
+    .navbar .nav-link:focus-visible { outline: 2px solid %1$s; outline-offset: -2px; border-radius: 4px; }
     .navbar .nav-link.active { color: %2$s !important; font-weight: 600; box-shadow: inset 0 -3px 0 %1$s; }
+    .nav-link:focus-visible, a:focus-visible { outline: 2px solid %1$s; outline-offset: 2px; border-radius: 2px; }
     .navbar-brand img { height: 28px; margin-right: .5rem; vertical-align: -6px; }
     .about-figure { font-size: .925rem; }
     .research-questions { background: #f2f7ee; border-left: 4px solid %1$s; border-radius: 4px;
@@ -71,9 +91,13 @@ app_theme <- bs_theme(
     .code-panel > summary { cursor: pointer; color: %2$s; font-weight: 600; font-size: .9rem; border-radius: 4px; }
     .code-panel > summary:focus-visible { outline: 2px solid %1$s; outline-offset: 2px; }
     .code-block { position: relative; margin-top: .5rem; }
+    .chord-label-badge { display: inline-block; background: #f2f7ee; border: 1px solid #dfe7da;
+                         border-left: 3px solid %1$s; padding: .4rem .75rem; border-radius: 4px;
+                         font-weight: 500; font-size: .875rem; color: %2$s; margin-top: .5rem; }
     .code-block pre { background: #f6f8f5; border: 1px solid #dfe7da; border-radius: 4px; padding: .75rem;
                       font-size: .8rem; white-space: pre; overflow-x: auto; margin: 0; }
-    .code-block .copy-code { position: absolute; top: .4rem; right: .4rem; background: #fff; }
+    .code-block .copy-code { position: absolute; top: .4rem; right: .4rem; background: #fff; transition: background-color .15s ease-in-out, border-color .15s ease-in-out, color .15s ease-in-out; }
+    .code-block .copy-code.copied { background-color: %1$s; color: #fff; border-color: %1$s; }
     .code-block .copy-code:focus-visible { outline: 2px solid %1$s; outline-offset: 2px; }
     .slider-animate-button:focus-visible { outline: 2px solid %1$s; outline-offset: 2px; border-radius: 50%%; }
   ", daynamica_green, daynamica_green_dark))
@@ -81,34 +105,67 @@ app_theme <- bs_theme(
 copy_code_js <- tags$script(HTML("
   document.addEventListener('click', function (e) {
     var button = e.target.closest('.copy-code');
-    if (!button) return;
-    var pre = button.parentElement.querySelector('pre');
-    var selectCode = function () {
-      var range = document.createRange();
-      range.selectNodeContents(pre);
-      var selection = window.getSelection();
-      selection.removeAllRanges();
-      selection.addRange(range);
-      button.textContent = 'Press Ctrl+C to copy';
-      button.setAttribute('aria-label', 'Press Ctrl+C to copy code');
+    if (button) {
+      var pre = button.parentElement.querySelector('pre');
+      var selectCode = function () {
+        var range = document.createRange();
+        range.selectNodeContents(pre);
+        var selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+        button.textContent = 'Press Ctrl+C to copy';
+        button.setAttribute('aria-label', 'Press Ctrl+C to copy code');
+        setTimeout(function () {
+          button.textContent = 'Copy';
+          button.setAttribute('aria-label', 'Copy code to clipboard');
+        }, 3000);
+      };
+      if (!navigator.clipboard) { selectCode(); return; }
+      navigator.clipboard.writeText(pre.innerText).then(function () {
+        button.textContent = 'Copied';
+        button.classList.add('btn-success');
+        button.classList.remove('btn-outline-secondary');
+        button.setAttribute('aria-label', 'Copied to clipboard');
+        setTimeout(function () {
+          button.textContent = 'Copy';
+          button.classList.remove('btn-success');
+          button.classList.add('btn-outline-secondary');
+          button.setAttribute('aria-label', 'Copy code to clipboard');
+        }, 1500);
+      }, selectCode);
+    }
+
+    if (e.target.closest('.slider-animate-button')) {
       setTimeout(function () {
-        button.textContent = 'Copy';
-        button.setAttribute('aria-label', 'Copy code to clipboard');
-      }, 3000);
-    };
-    if (!navigator.clipboard) { selectCode(); return; }
-    navigator.clipboard.writeText(pre.innerText).then(function () {
-      button.textContent = 'Copied';
-      button.classList.add('btn-success');
-      button.classList.remove('btn-outline-secondary');
-      button.setAttribute('aria-label', 'Copied to clipboard');
-      setTimeout(function () {
-        button.textContent = 'Copy';
-        button.classList.remove('btn-success');
-        button.classList.add('btn-outline-secondary');
-        button.setAttribute('aria-label', 'Copy code to clipboard');
-      }, 1500);
-    }, selectCode);
+        document.querySelectorAll('.slider-animate-button').forEach(function (btn) {
+          var isPlaying = btn.classList.contains('playing') || btn.querySelector('.glyphicon-pause, .fa-pause');
+          btn.setAttribute('aria-label', isPlaying ? 'Pause animation' : 'Start animation');
+        });
+      }, 50);
+    }
+  });
+
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.slider-animate-button').forEach(function (btn) {
+      btn.setAttribute('aria-label', 'Start animation');
+    });
+  });
+"))
+
+slider_animate_js <- tags$script(HTML("
+  function updateSliderAnimateAria() {
+    var animBtn = document.querySelector('.slider-animate-button');
+    if (!animBtn) return;
+    if (!animBtn.hasAttribute('role')) animBtn.setAttribute('role', 'button');
+    var stopSpan = animBtn.querySelector('.stop');
+    var isPlaying = stopSpan && window.getComputedStyle(stopSpan).display !== 'none';
+    animBtn.setAttribute('aria-label', isPlaying ? 'Pause daily rhythm animation' : 'Play daily rhythm animation');
+  }
+  document.addEventListener('DOMContentLoaded', updateSliderAnimateAria);
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('.slider-animate-button')) {
+      setTimeout(updateSliderAnimateAria, 50);
+    }
   });
 "))
 
@@ -162,6 +219,7 @@ ui <- page_navbar(
   navbar_options = navbar_options(bg = "#ffffff", theme = "light"),
   fillable = FALSE,
   header = tagList(
+    tags$a(href = "#main-content", class = "skip-to-content", "Skip to main content"),
     tags$head(tags$link(rel = "icon", type = "image/png", href = "logo.png")),
     copy_code_js,
     slider_animate_js,
@@ -179,13 +237,14 @@ ui <- page_navbar(
     hr(),
     helpText(
       "This app uses an anonymized sample of Daynamica data and the open-source ",
-      a("rDaynamica R package", href = "https://github.com/Daynamica-Repositories/rDaynamica", target = "_blank", rel = "noopener noreferrer", title = "opens in new tab"),
+      a("rDaynamica R package", href = "https://github.com/Daynamica-Repositories/rDaynamica", target = "_blank", rel = "noopener noreferrer", title = "opens in new tab", `aria-label` = "rDaynamica R package (opens in new tab)"),
       ". Everything shown here can be reproduced in R with your own data."
     )
   ),
 
   nav_panel(
     "Overview",
+    div(id = "main-content", tabindex = "-1"),
     intro("Daynamica is a smartphone app that detects participants' activities and trips throughout the day. ",
           "Participants review them in a daily calendar, label what they were doing and how they traveled, and answer ",
           "short surveys about specific activities and trips and about how they are feeling in the moment. ",
@@ -276,7 +335,7 @@ ui <- page_navbar(
         sliderInput("chord_time", "Time of day", min = day_start, max = day_start + 1425 * 60,
                     value = day_start + 480 * 60, step = 15 * 60, timeFormat = "%H:%M", timezone = "+0000",
                     ticks = FALSE, animate = animationOptions(interval = 1500)),
-        textOutput("chord_label"),
+        div(`aria-live` = "polite", `aria-atomic` = "true", textOutput("chord_label")),
         about_figure(
           "Each segment around the circle is a category, sized by the number of participant-days flowing out of and into it at this time. Ribbons show what people were doing 15 minutes later: a ribbon that loops back to its own segment means they kept doing the same thing, and a ribbon to another segment means they switched. Detailed categories are grouped (for example, car, bus, and rail are all Motorized Trip) to keep the diagram readable.",
           list("When are transitions between activities most common, and when are travel peaks?",
@@ -288,7 +347,7 @@ ui <- page_navbar(
       card(div(
         class = "chord-wrap",
         plotOutput("chord_plot", height = "620px"),
-        div(class = "chord-loading",
+        div(class = "chord-loading", role = "status", `aria-live` = "polite",
             strong("Preparing the daily rhythm diagram…"),
             span("This takes a few seconds the first time, and after changing which days count."))
       ))
@@ -405,7 +464,7 @@ ui <- page_navbar(
       p(class = "about-figure",
         "Point ", code("path2dict()"), " at the folder containing your Daynamica CSV export instead of the example data, and set ",
         code("file_prefix"), " to match your file names. The package's ",
-        a("README", href = "https://github.com/Daynamica-Repositories/rDaynamica#readme", target = "_blank", rel = "noopener noreferrer", title = "opens in new tab"),
+        a("README", href = "https://github.com/Daynamica-Repositories/rDaynamica#readme", target = "_blank", rel = "noopener noreferrer", title = "opens in new tab", `aria-label` = "rDaynamica R package README (opens in new tab)"),
         " and example analysis script describe the full workflow, including ready-made HTML reports.")
     )
   )
