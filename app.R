@@ -149,8 +149,9 @@ slider_animate_js <- tags$script(HTML("
     function updateSliderBtn(btn) {
       if (!btn) return;
       if (!btn.hasAttribute('role')) btn.setAttribute('role', 'button');
-      var isPlaying = btn.querySelector('.stop, .glyphicon-pause, .fa-pause') !== null || btn.classList.contains('playing');
-      var label = isPlaying ? 'Pause daily rhythm animation' : 'Play daily rhythm animation';
+      var stopSpan = btn.querySelector('.stop, .glyphicon-pause, .fa-pause');
+      var isPlaying = (stopSpan && window.getComputedStyle(stopSpan).display !== 'none') || btn.classList.contains('playing');
+      var label = isPlaying ? 'Pause time of day animation' : 'Play time of day animation';
       var title = isPlaying ? 'Pause animation' : 'Play animation';
       btn.setAttribute('aria-label', label);
       btn.setAttribute('title', title);
@@ -171,9 +172,11 @@ slider_animate_js <- tags$script(HTML("
     });
 
     document.addEventListener('keydown', function (e) {
-      var btn = e.target.closest('.slider-animate-button');
-      if (btn && (e.key === ' ' || e.key === 'Enter')) {
-        setTimeout(function () { updateSliderBtn(btn); }, 50);
+      if (e.key === ' ' || e.key === 'Enter') {
+        var btn = e.target.closest('.slider-animate-button');
+        if (btn) {
+          setTimeout(function () { updateSliderBtn(btn); }, 50);
+        }
       }
     });
   });
