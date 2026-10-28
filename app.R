@@ -145,34 +145,12 @@ copy_code_js <- tags$script(HTML("
 "))
 
 slider_animate_js <- tags$script(HTML("
-  function updateSliderAnimateAria() {
-    var animBtn = document.querySelector('.slider-animate-button');
-    if (!animBtn) return;
-    if (!animBtn.hasAttribute('role')) animBtn.setAttribute('role', 'button');
-    var stopSpan = animBtn.querySelector('.stop');
-    var isPlaying = stopSpan && window.getComputedStyle(stopSpan).display !== 'none';
-    var label = isPlaying ? 'Pause daily rhythm animation' : 'Play daily rhythm animation';
-    animBtn.setAttribute('aria-label', label);
-    animBtn.setAttribute('title', label);
-  }
-  document.addEventListener('DOMContentLoaded', updateSliderAnimateAria);
-  document.addEventListener('click', function (e) {
-    if (e.target.closest('.slider-animate-button')) {
-      setTimeout(updateSliderAnimateAria, 50);
-    }
-  });
-  document.addEventListener('keydown', function (e) {
-    if (e.target.closest('.slider-animate-button') && (e.key === ' ' || e.key === 'Enter')) {
-      setTimeout(updateSliderAnimateAria, 50);
-    }
-  });
-"))
-
-slider_animate_js <- tags$script(HTML("
   document.addEventListener('DOMContentLoaded', function () {
     function updateSliderBtn(btn) {
+      if (!btn) return;
+      if (!btn.hasAttribute('role')) btn.setAttribute('role', 'button');
       var isPlaying = btn.querySelector('.stop, .glyphicon-pause, .fa-pause') !== null || btn.classList.contains('playing');
-      var label = isPlaying ? 'Pause time of day animation' : 'Play time of day animation';
+      var label = isPlaying ? 'Pause daily rhythm animation' : 'Play daily rhythm animation';
       var title = isPlaying ? 'Pause animation' : 'Play animation';
       btn.setAttribute('aria-label', label);
       btn.setAttribute('title', title);
@@ -188,6 +166,13 @@ slider_animate_js <- tags$script(HTML("
     document.addEventListener('click', function (e) {
       var btn = e.target.closest('.slider-animate-button');
       if (btn) {
+        setTimeout(function () { updateSliderBtn(btn); }, 50);
+      }
+    });
+
+    document.addEventListener('keydown', function (e) {
+      var btn = e.target.closest('.slider-animate-button');
+      if (btn && (e.key === ' ' || e.key === 'Enter')) {
         setTimeout(function () { updateSliderBtn(btn); }, 50);
       }
     });
