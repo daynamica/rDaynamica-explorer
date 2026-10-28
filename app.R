@@ -149,8 +149,10 @@ slider_animate_js <- tags$script(HTML("
     function updateSliderBtn(btn) {
       if (!btn) return;
       if (!btn.hasAttribute('role')) btn.setAttribute('role', 'button');
-      var stopSpan = btn.querySelector('.stop, .glyphicon-pause, .fa-pause');
-      var isPlaying = (stopSpan && window.getComputedStyle(stopSpan).display !== 'none') || btn.classList.contains('playing');
+      var stopSpan = btn.querySelector('.stop');
+      var isPlaying = (stopSpan && window.getComputedStyle(stopSpan).display !== 'none') ||
+                      btn.querySelector('.glyphicon-pause, .fa-pause') !== null ||
+                      btn.classList.contains('playing');
       var label = isPlaying ? 'Pause time of day animation' : 'Play time of day animation';
       var title = isPlaying ? 'Pause animation' : 'Play animation';
       btn.setAttribute('aria-label', label);
@@ -172,11 +174,9 @@ slider_animate_js <- tags$script(HTML("
     });
 
     document.addEventListener('keydown', function (e) {
-      if (e.key === ' ' || e.key === 'Enter') {
-        var btn = e.target.closest('.slider-animate-button');
-        if (btn) {
-          setTimeout(function () { updateSliderBtn(btn); }, 50);
-        }
+      var btn = e.target.closest('.slider-animate-button');
+      if (btn && (e.key === ' ' || e.key === 'Spacebar' || e.key === 'Enter')) {
+        setTimeout(function () { updateSliderBtn(btn); }, 50);
       }
     });
   });
