@@ -335,7 +335,7 @@ ui <- page_navbar(
         sliderInput("chord_time", "Time of day", min = day_start, max = day_start + 1425 * 60,
                     value = day_start + 480 * 60, step = 15 * 60, timeFormat = "%H:%M", timezone = "+0000",
                     ticks = FALSE, animate = animationOptions(interval = 1500)),
-        div(`aria-live` = "polite", `aria-atomic` = "true", textOutput("chord_label")),
+        div(class = "chord-label-badge", `aria-live` = "polite", `aria-atomic` = "true", textOutput("chord_label")),
         about_figure(
           "Each segment around the circle is a category, sized by the number of participant-days flowing out of and into it at this time. Ribbons show what people were doing 15 minutes later: a ribbon that loops back to its own segment means they kept doing the same thing, and a ribbon to another segment means they switched. Detailed categories are grouped (for example, car, bus, and rail are all Motorized Trip) to keep the diagram readable.",
           list("When are transitions between activities most common, and when are travel peaks?",
