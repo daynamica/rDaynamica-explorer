@@ -102,6 +102,18 @@ app_theme <- bs_theme(
     .slider-animate-button:focus-visible { outline: 2px solid %1$s; outline-offset: 2px; border-radius: 50%%; }
   ", daynamica_green, daynamica_green_dark))
 
+code_panel_js <- tags$script(HTML("
+  document.addEventListener('toggle', function (e) {
+    var details = e.target;
+    if (details && details.matches && details.matches('.code-panel')) {
+      var summary = details.querySelector('summary');
+      if (summary) {
+        summary.textContent = details.open ? 'Hide the R code' : 'Show the R code';
+      }
+    }
+  }, true);
+"))
+
 copy_code_js <- tags$script(HTML("
   document.addEventListener('click', function (e) {
     var button = e.target.closest('.copy-code');
@@ -208,6 +220,7 @@ ui <- page_navbar(
   header = tagList(
     tags$a(href = "#main-content", class = "skip-to-content", "Skip to main content"),
     tags$head(tags$link(rel = "icon", type = "image/png", href = "logo.png")),
+    code_panel_js,
     copy_code_js,
     slider_animate_js,
     # The delay keeps the spinner from flickering on quick updates
@@ -443,7 +456,7 @@ ui <- page_navbar(
       card_header("Setup: install rDaynamica and prepare the example data"),
       p(class = "about-figure", "Run this once in R or RStudio before the code from the other tabs. It installs the package, loads the anonymized example data that ships with it, and runs the standard preprocessing steps. Takes about a minute."),
       div(class = "code-block",
-          tags$button(type = "button", class = "btn btn-sm btn-outline-secondary copy-code", `aria-label` = "Copy code to clipboard", `aria-live` = "polite", "Copy"),
+          tags$button(type = "button", class = "btn btn-sm btn-outline-secondary copy-code", `aria-label` = "Copy code to clipboard", title = "Copy code to clipboard", `aria-live` = "polite", "Copy"),
           tags$pre(setup_code))
     ),
     card(
