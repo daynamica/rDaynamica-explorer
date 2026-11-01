@@ -612,9 +612,15 @@ server <- function(input, output, session) {
             format_minutes((chord_minutes() + 15) %% 1440))
   })
 
+  chord_alt <- reactive({
+    sprintf("Daily rhythm chord diagram showing activity and trip transitions from %s to %s",
+            format_minutes(chord_minutes()),
+            format_minutes((chord_minutes() + 15) %% 1440))
+  })
+
   output$chord_plot <- renderPlot({
     draw_chord_frame(chord(), frame = chord_minutes() / 15 + 1)
-  }, res = 96) |> bindCache(input$min_hours, chord_minutes())
+  }, alt = chord_alt, res = 96) |> bindCache(input$min_hours, chord_minutes())
 
   # Activity chains -------------------------------------------------------
   chains <- reactive({
