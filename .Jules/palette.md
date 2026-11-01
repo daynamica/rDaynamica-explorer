@@ -5,3 +5,7 @@
 ## 2025-10-26 - Keyboard Event Listeners for Shiny Slider Animation ARIA Updates
 **Learning:** Shiny's animated sliders (`sliderInput` with `animate = TRUE`) generate a `.slider-animate-button` that can be toggled via keyboard (Space or Enter keys) as well as mouse clicks. Standard click-only JS event listeners miss keyboard toggles, leaving dynamic screen reader announcements (`aria-label`) out of sync during keyboard navigation.
 **Action:** Attach keydown event listeners checking for Space (`' '`) and `'Enter'` keys alongside click listeners to ensure ARIA label updates run on all user interactions.
+
+## 2026-11-01 - Dynamic Reactive Alt Text for Base R Graphics in Shiny
+**Learning:** Non-ggplot base R plots rendered via `renderPlot()` default to `alt = "Plot object"` or generic non-descriptive alt attributes on the underlying `<img>` tag. For time-series or animated diagrams (like chord diagrams driven by slider inputs), this leaves screen reader users unaware of the specific time window or data state being viewed.
+**Action:** Provide a reactive expression to the `alt` parameter of `renderPlot(..., alt = ...)` that dynamically interpolates active filters or animation time frames into descriptive text (e.g., "Daily rhythm chord diagram showing activity and trip transitions from HH:MM to HH:MM").
