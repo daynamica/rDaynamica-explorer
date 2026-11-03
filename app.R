@@ -100,7 +100,32 @@ app_theme <- bs_theme(
     .code-block .copy-code.copied { background-color: %1$s; color: #fff; border-color: %1$s; }
     .code-block .copy-code:focus-visible { outline: 2px solid %1$s; outline-offset: 2px; }
     .slider-animate-button:focus-visible { outline: 2px solid %1$s; outline-offset: 2px; border-radius: 50%%; }
+    .tab-pane:focus { outline: none; }
   ", daynamica_green, daynamica_green_dark))
+
+skip_to_content_js <- tags$script(HTML("
+  document.addEventListener('DOMContentLoaded', function () {
+    var content = document.querySelector('.tab-content');
+    if (content && !content.getAttribute('role')) content.setAttribute('role', 'main');
+  });
+  function activateSkipToContent(e) {
+    var activePane = document.querySelector('.tab-content > .tab-pane.active');
+    if (activePane) {
+      e.preventDefault();
+      if (!activePane.hasAttribute('tabindex')) activePane.setAttribute('tabindex', '-1');
+      activePane.focus();
+      activePane.scrollIntoView();
+    }
+  }
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('.skip-to-content')) activateSkipToContent(e);
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.target.closest('.skip-to-content') && (e.key === ' ' || e.key === 'Spacebar' || e.key === 'Enter')) {
+      activateSkipToContent(e);
+    }
+  });
+"))
 
 code_panel_js <- tags$script(HTML("
   document.addEventListener('toggle', function (e) {
@@ -220,6 +245,7 @@ ui <- page_navbar(
   header = tagList(
     tags$a(href = "#main-content", class = "skip-to-content", "Skip to main content"),
     tags$head(tags$link(rel = "icon", type = "image/png", href = "logo.png")),
+    skip_to_content_js,
     code_panel_js,
     copy_code_js,
     slider_animate_js,
