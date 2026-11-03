@@ -9,3 +9,7 @@
 ## 2026-11-01 - Dynamic Reactive Alt Text for Base R Graphics in Shiny
 **Learning:** Non-ggplot base R plots rendered via `renderPlot()` default to `alt = "Plot object"` or generic non-descriptive alt attributes on the underlying `<img>` tag. For time-series or animated diagrams (like chord diagrams driven by slider inputs), this leaves screen reader users unaware of the specific time window or data state being viewed.
 **Action:** Provide a reactive expression to the `alt` parameter of `renderPlot(..., alt = ...)` that dynamically interpolates active filters or animation time frames into descriptive text (e.g., "Daily rhythm chord diagram showing activity and trip transitions from HH:MM to HH:MM").
+
+## 2026-11-03 - Tab-Aware Skip-to-Content Navigation and Main Landmark in Shiny Navbar Apps
+**Learning:** In tabbed Shiny applications (`bslib::page_navbar`), static `#main-content` targets placed inside a single `nav_panel` break keyboard skip-to-content navigation on other tabs because inactive tab panes are hidden (`display: none`), while missing landmarks leave assistive technologies without a main landmark.
+**Action:** Intercept skip-link activation to dynamically focus and scroll to the currently active tab pane (`.tab-content > .tab-pane.active`) with `tabindex="-1"`, and assign `role="main"` to `.tab-content` on DOM load.
