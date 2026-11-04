@@ -13,3 +13,7 @@
 ## 2026-11-03 - Tab-Aware Skip-to-Content Navigation and Main Landmark in Shiny Navbar Apps
 **Learning:** In tabbed Shiny applications (`bslib::page_navbar`), static `#main-content` targets placed inside a single `nav_panel` break keyboard skip-to-content navigation on other tabs because inactive tab panes are hidden (`display: none`), while missing landmarks leave assistive technologies without a main landmark.
 **Action:** Intercept skip-link activation to dynamically focus and scroll to the currently active tab pane (`.tab-content > .tab-pane.active`) with `tabindex="-1"`, and assign `role="main"` to `.tab-content` on DOM load.
+
+## 2026-11-04 - Visible Focus Indicators for bslib Full-Screen Card Toggle Controls
+**Learning:** In `bslib` cards configured with `full_screen = TRUE`, the expand button (`.bslib-full-screen-enter`) and close anchor (`.bslib-full-screen-exit`) lack explicit `:focus-visible` styling matching the custom design system theme, leaving keyboard users with browser-default or low-contrast outlines when tabbing through expandable cards and overlays.
+**Action:** Provide explicit `:focus-visible` CSS rules for both `.bslib-full-screen-enter` and `.bslib-full-screen-exit` using the primary brand color and an offset matching other interactive controls.
