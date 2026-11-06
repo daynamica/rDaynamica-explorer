@@ -101,6 +101,7 @@ app_theme <- bs_theme(
     .code-block .copy-code:focus-visible { outline: 2px solid %1$s; outline-offset: 2px; }
     .slider-animate-button:focus-visible { outline: 2px solid %1$s; outline-offset: 2px; border-radius: 50%%; }
     .bslib-full-screen-enter:focus-visible, .bslib-full-screen-exit:focus-visible { outline: 2px solid %1$s; outline-offset: 2px; }
+    .collapse-toggle:focus-visible { outline: 2px solid %1$s; outline-offset: 2px; }
     .tab-pane:focus { outline: none; }
   ", daynamica_green, daynamica_green_dark))
 
@@ -220,6 +221,34 @@ slider_animate_js <- tags$script(HTML("
   });
 "))
 
+sidebar_toggle_js <- tags$script(HTML("
+  document.addEventListener('DOMContentLoaded', function () {
+    function updateSidebarToggle(btn) {
+      if (!btn) return;
+      var isOpen = btn.getAttribute('aria-expanded') === 'true';
+      var label = isOpen ? 'Collapse sidebar' : 'Expand sidebar';
+      btn.setAttribute('aria-label', label);
+      btn.setAttribute('title', label);
+    }
+    function initSidebarToggles() {
+      document.querySelectorAll('.collapse-toggle').forEach(updateSidebarToggle);
+    }
+    initSidebarToggles();
+    setTimeout(initSidebarToggles, 500);
+    document.addEventListener('click', function (e) {
+      var btn = e.target.closest('.collapse-toggle');
+      if (btn) setTimeout(function () { updateSidebarToggle(btn); }, 50);
+    });
+    document.addEventListener('keydown', function (e) {
+      var btn = e.target.closest('.collapse-toggle');
+      if (btn && (e.key === ' ' || e.key === 'Spacebar' || e.key === 'Enter')) {
+        setTimeout(function () { updateSidebarToggle(btn); }, 50);
+      }
+    });
+    document.addEventListener('bslib.sidebar', function () { initSidebarToggles(); });
+  });
+"))
+
 stat_box <- function(title, output_id) {
   value_box(title, textOutput(output_id), theme = value_box_theme(bg = "#f6f9f3", fg = daynamica_ink))
 }
@@ -250,6 +279,7 @@ ui <- page_navbar(
     code_panel_js,
     copy_code_js,
     slider_animate_js,
+    sidebar_toggle_js,
     # The delay keeps the spinner from flickering on quick updates
     useBusyIndicators(spinners = TRUE, pulse = TRUE),
     busyIndicatorOptions(spinner_type = "ring2", spinner_color = daynamica_green, spinner_size = "48px",

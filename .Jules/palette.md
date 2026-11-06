@@ -17,3 +17,7 @@
 ## 2026-11-04 - Visible Focus Indicators for bslib Full-Screen Card Toggle Controls
 **Learning:** In `bslib` cards configured with `full_screen = TRUE`, the expand button (`.bslib-full-screen-enter`) and close anchor (`.bslib-full-screen-exit`) lack explicit `:focus-visible` styling matching the custom design system theme, leaving keyboard users with browser-default or low-contrast outlines when tabbing through expandable cards and overlays.
 **Action:** Provide explicit `:focus-visible` CSS rules for both `.bslib-full-screen-enter` and `.bslib-full-screen-exit` using the primary brand color and an offset matching other interactive controls.
+
+## 2026-11-05 - Dynamic ARIA Labels and Focus Indicators for bslib Sidebar Toggle Button
+**Learning:** In `bslib` collapsible sidebars (`sidebar()`), the collapse toggle button (`.collapse-toggle`) contains only an SVG icon with a static `title="Toggle sidebar"` and lacks an accessible `aria-label` stating the current expanded/collapsed action ("Collapse sidebar" / "Expand sidebar"). Additionally, it lacks custom `:focus-visible` styling matching the application theme.
+**Action:** Provide `:focus-visible` CSS rules for `.collapse-toggle` using the brand primary color, and attach DOM/event listeners (`DOMContentLoaded`, `click`, `keydown`, `bslib.sidebar`) to dynamically assign and update `aria-label` and `title` according to the button's `aria-expanded` state.
