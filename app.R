@@ -223,29 +223,31 @@ slider_animate_js <- tags$script(HTML("
 
 sidebar_toggle_js <- tags$script(HTML("
   document.addEventListener('DOMContentLoaded', function () {
-    function updateSidebarToggle(btn) {
+    function updateToggle(btn) {
       if (!btn) return;
-      var isOpen = btn.getAttribute('aria-expanded') === 'true';
-      var label = isOpen ? 'Collapse sidebar' : 'Expand sidebar';
+      var isExpanded = btn.getAttribute('aria-expanded') === 'true';
+      var label = isExpanded ? 'Collapse sidebar' : 'Expand sidebar';
       btn.setAttribute('aria-label', label);
       btn.setAttribute('title', label);
     }
-    function initSidebarToggles() {
-      document.querySelectorAll('.collapse-toggle').forEach(updateSidebarToggle);
+    function initToggles() {
+      document.querySelectorAll('.collapse-toggle').forEach(updateToggle);
     }
-    initSidebarToggles();
-    setTimeout(initSidebarToggles, 500);
+    initToggles();
+    setTimeout(initToggles, 500);
     document.addEventListener('click', function (e) {
       var btn = e.target.closest('.collapse-toggle');
-      if (btn) setTimeout(function () { updateSidebarToggle(btn); }, 50);
+      if (btn) setTimeout(function () { updateToggle(btn); }, 50);
     });
     document.addEventListener('keydown', function (e) {
       var btn = e.target.closest('.collapse-toggle');
       if (btn && (e.key === ' ' || e.key === 'Spacebar' || e.key === 'Enter')) {
-        setTimeout(function () { updateSidebarToggle(btn); }, 50);
+        setTimeout(function () { updateToggle(btn); }, 50);
       }
     });
-    document.addEventListener('bslib.sidebar', function () { initSidebarToggles(); });
+    document.addEventListener('bslib.sidebar', function () {
+      document.querySelectorAll('.collapse-toggle').forEach(updateToggle);
+    });
   });
 "))
 
