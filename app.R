@@ -100,6 +100,9 @@ app_theme <- bs_theme(
     .code-block .copy-code.copied { background-color: %1$s; color: #fff; border-color: %1$s; }
     .code-block .copy-code:focus-visible { outline: 2px solid %1$s; outline-offset: 2px; }
     .slider-animate-button:focus-visible { outline: 2px solid %1$s; outline-offset: 2px; border-radius: 50%%; }
+    .irs:has(.irs-line:focus-visible) .irs-handle, .irs-handle:focus-visible {
+      outline: 2px solid %1$s; outline-offset: 2px; border-radius: 50%%; background-color: #ffffff;
+    }
     .bslib-full-screen-enter:focus-visible, .bslib-full-screen-exit:focus-visible { outline: 2px solid %1$s; outline-offset: 2px; }
     .collapse-toggle:focus-visible { outline: 2px solid %1$s; outline-offset: 2px; }
     .tab-pane:focus { outline: none; }
