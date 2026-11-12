@@ -102,6 +102,8 @@ app_theme <- bs_theme(
     .slider-animate-button:focus-visible { outline: 2px solid %1$s; outline-offset: 2px; border-radius: 50%%; }
     .bslib-full-screen-enter:focus-visible, .bslib-full-screen-exit:focus-visible { outline: 2px solid %1$s; outline-offset: 2px; }
     .collapse-toggle:focus-visible { outline: 2px solid %1$s; outline-offset: 2px; }
+    .form-check-input:focus-visible { outline: 2px solid %1$s; outline-offset: 2px; }
+    .form-check-input:checked { background-color: %1$s; border-color: %1$s; }
     .tab-pane:focus { outline: none; }
   ", daynamica_green, daynamica_green_dark))
 

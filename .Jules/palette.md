@@ -21,3 +21,7 @@
 ## 2026-11-05 - Dynamic ARIA Labels and Focus Indicators for bslib Sidebar Toggles
 **Learning:** In `bslib` sidebar layouts, the collapse toggle button (`.collapse-toggle`) is an icon-only button that lacks an explicit `aria-label` (relying only on a static `title` attribute) and lacks design-system `:focus-visible` outline styling. Furthermore, the accessible name is not synchronized when toggled between collapsed and expanded states.
 **Action:** Add explicit `:focus-visible` styling to `.collapse-toggle` using brand outline variables, and dynamically set `aria-label` and `title` to "Collapse sidebar" or "Expand sidebar" on user interaction and the `bslib.sidebar` event.
+
+## 2026-11-08 - Brand Focus Indicators and Active Styles for bslib Form Check Inputs
+**Learning:** In Bootstrap 5 `bslib` Shiny themes, `radioButtons` and `checkboxInput` elements render `.form-check-input` controls that default to standard Bootstrap blue focus rings and checked fills. This diverges from the custom brand palette and leaves keyboard users with low-contrast focus indicators against light card backgrounds.
+**Action:** Add explicit `.form-check-input:focus-visible` outline rules using brand accent colors and harmonize `.form-check-input:checked` background/border colors with the brand primary color.
